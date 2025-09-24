@@ -115,38 +115,38 @@ Magic-API MCP 服务器为 Magic-API 开发提供以下专业工具：
 - **get_assistant_metadata**: 获取Magic-API MCP Server的完整元信息，包括版本、功能列表和配置
 
 #### 3.2 文档工具 (DocumentationTools)
-文档查询和知识库工具，提供全面的Magic-API文档查询功能
-- **get_script_syntax**: 获取Magic-API脚本语法说明
-- **get_module_api**: 获取内置模块的API文档
+文档查询与知识库工具，覆盖语法、实践、示例与流程
+- **get_magic_script_syntax**: 查询 Magic-Script 语法规则与示例
+- **get_magic_script_examples**: 获取脚本示例，支持关键词过滤
+- **get_magic_api_docs**: 查看官方文档索引或详细内容
+- **get_best_practices**: 查阅最佳实践列表
+- **get_common_pitfalls**: 查阅常见问题与规避建议
+- **get_development_workflow**: 获取标准化开发流程指南
+- **get_module_api_docs**: 查询内置模块 API 文档
+- **list_available_modules**: 查看可用模块与自动导入模块
 - **get_function_docs**: 获取内置函数库文档
-- **get_extension_docs**: 获取类型扩展功能文档
-- **get_config_docs**: 获取配置选项说明
-- **get_plugin_docs**: 获取插件系统文档
-- **get_best_practices**: 获取最佳实践指南
-- **get_pitfalls**: 获取常见问题和陷阱
-- **get_workflow**: 获取工作流模板
-- **list_examples**: 列出所有可用示例
-- **get_examples**: 获取特定类型的示例代码
-- **get_docs**: 获取官方文档索引和内容
+- **get_extension_docs**: 获取类型扩展文档（默认禁用，启用后可用）
+- **get_config_docs**: 获取配置项文档（默认禁用）
+- **get_plugin_docs**: 获取插件系统文档（默认禁用）
+- **get_examples** / **list_examples**: 统一查询示例分类与代码片段
+- **get_docs**: 获取 Magic-API 官方站点索引
 
 #### 3.3 API 工具 (ApiTools)
 API调用和测试工具，支持灵活的接口调用和测试
 - **call_magic_api**: 调用Magic-API接口并返回请求结果，支持GET、POST、PUT、DELETE等HTTP方法
 
 #### 3.4 资源管理工具 (ResourceManagementTools)
-完整的资源管理系统，支持资源树查询、CRUD操作等
-- **get_resource_tree**: 获取资源树，支持多种过滤和导出格式
-- **get_resource_detail**: 获取特定资源的详细信息
-- **create_resource_group**: 创建新的资源分组
-- **create_api_resource**: 创建新的API资源
-- **copy_resource**: 复制现有资源
-- **move_resource**: 移动资源到其他分组
-- **delete_resource**: 删除资源（支持软删除）
-- **lock_resource**: 锁定资源防止修改
-- **unlock_resource**: 解锁资源
-- **list_resource_groups**: 列出所有资源分组
-- **export_resource_tree**: 导出完整的资源树结构
-- **get_resource_stats**: 获取资源统计信息
+完整的资源管理系统，支持资源树查询与批量操作
+- **get_resource_tree**: 获取资源树，支持过滤、导出 CSV
+- **create_resource_group**: 创建单个或批量分组
+- **create_api_resource** / **create_api_endpoint**: 创建单个或批量 API
+- **copy_resource**: 复制资源
+- **move_resource**: 移动资源
+- **delete_resource**: 删除单个或批量资源
+- **lock_resource** / **unlock_resource**: 批量锁定或解锁资源
+- **list_resource_groups**: 列出与搜索资源分组
+- **export_resource_tree**: 按 JSON/CSV 导出资源树
+- **get_resource_stats**: 统计资源数量与类型分布
 
 #### 3.5 查询工具 (QueryTools)
 高效的资源查询和检索工具
@@ -168,9 +168,9 @@ API调用和测试工具，支持灵活的接口调用和测试
 - **get_websocket_status**: 获取WebSocket连接状态
 
 #### 3.7 搜索工具 (SearchTools)
-内容搜索和定位工具
-- **search_api_scripts**: 在所有API脚本中搜索关键词
-- **search_todo_comments**: 搜索API脚本中的TODO注释
+内容搜索与定位
+- **search_api_scripts**: 在所有 API 脚本中检索关键词
+- **search_todo_comments**: 搜索脚本中的 TODO 注释（默认禁用）
 
 #### 3.8 备份工具 (BackupTools)
 完整的备份管理功能
@@ -194,8 +194,15 @@ Java类和方法检索工具
 - **generate_workflow_code**: 生成工作流模板代码
 
 #### 3.11 提示词工具 (PromptTools)
-可复用的提示词模板，帮助生成专业的Magic-API开发者助手配置
-- **magic_api_developer_guide**: 生成专业的 Magic-API 开发者助手提示词
+提供可复用的提示词模板，确保助手严格遵循 MCP 工具化流程
+- **magic_api_developer_guide**: 输出最新版“Magic-API 开发者助手”系统提示词，强调“仅依赖 MCP 工具”工作守则、六步工具工作流以及结构化输出要求
+
+### 3.12 工作流知识库亮点
+
+`magicapi_tools/utils/kb_practices.py` 新增 "mcp_tool_driven" 等工作流，调用 `get_development_workflow` 或 `get_practices_guide` 时可获取：
+- MCP 工具优先的通用流程：覆盖准备、信息采集、执行、校验、总结全链路，并针对每一步给出对应工具提示。
+- create_api / diagnose / optimize / refactor 等场景化流程：提供原则说明、步骤拆解以及工具列表，确保在接口开发、故障排查、性能优化与重构中全程依赖 MCP 工具完成。
+- 结合 `magic_api_developer_guide` 提示词，可让大模型在对话中主动引用工具证据，输出可验证的结论。
 
 ### 4. 工具组合配置
 
@@ -231,7 +238,7 @@ Java类和方法检索工具
 # 推荐方式：使用 uvx 运行最新版本（适用于已发布到 pip 的包）
 uvx magic-api-mcp-server@latest
 
-# 或使用安装后的命令运行最新版本
+# 或安装后使用本地命令
 magic-api-mcp-server
 
 # 或者直接运行 Python 脚本（开发时）
