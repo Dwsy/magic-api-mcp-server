@@ -150,10 +150,9 @@ API调用和测试工具，支持灵活的接口调用和测试
 
 #### 3.5 查询工具 (QueryTools)
 高效的资源查询和检索工具
-- **find_resource_id_by_path**: 根据API路径查找对应的资源ID，支持模糊匹配
 - **get_api_details_by_path**: 根据API路径直接获取接口的详细信息，支持模糊匹配
-- **find_api_ids_by_path**: 批量查找匹配路径的API资源ID列表
-- **find_api_details_by_path**: 批量获取匹配路径的API资源详细信息
+- **get_api_details_by_id**: 根据接口ID获取完整的接口详细信息和配置
+- **search_api_endpoints**: 搜索和过滤Magic-API接口端点，返回包含ID的完整信息列表
 
 #### 3.6 调试工具 (DebugTools)
 强大的调试功能，支持断点管理和调试会话
@@ -193,6 +192,10 @@ Java类和方法检索工具
 - **generate_database_query**: 生成数据库查询代码
 - **generate_api_test**: 生成API接口测试代码
 - **generate_workflow_code**: 生成工作流模板代码
+
+#### 3.11 提示词工具 (PromptTools)
+可复用的提示词模板，帮助生成专业的Magic-API开发者助手配置
+- **magic_api_developer_guide**: 生成专业的 Magic-API 开发者助手提示词
 
 ### 4. 工具组合配置
 
@@ -583,10 +586,9 @@ magicapi_tools/
 - **move_resource**: 移动资源到其他分组
 
 ### 查询工具 (QueryTools)
-- **find_resource_id_by_path**: 根据路径查找资源 ID
-- **get_api_details_by_path**: 获取接口详细信息
-- **find_api_ids_by_path**: 批量查找资源 ID
-- **find_api_details_by_path**: 批量获取详细信息
+- **get_api_details_by_path**: 根据路径获取接口详细信息
+- **get_api_details_by_id**: 根据ID获取接口详细信息
+- **search_api_endpoints**: 搜索和过滤接口端点
 
 ### 调试工具 (DebugTools)
 - **set_breakpoint**: 设置断点进行调试
@@ -646,7 +648,7 @@ magicapi_tools/
 📚 文档查询: get_script_syntax, get_module_api, get_best_practices, get_examples
 🔧 API 调用: call_magic_api
 📁 资源管理: get_resource_tree, create_api_resource, delete_resource
-🔍 查询工具: find_resource_id_by_path, get_api_details_by_path
+🔍 查询工具: get_api_details_by_path, get_api_details_by_id, search_api_endpoints
 🐛 调试工具: set_breakpoint, resume_breakpoint_execution, call_api_with_debug
 🔎 搜索工具: search_api_scripts, search_todo_comments
 💾 备份工具: list_backups, create_full_backup, rollback_backup
@@ -674,3 +676,29 @@ magicapi_tools/
 ```
 
 本项目 MCP 服务器专为 Magic-API 开发者设计，提供了一套完整的工作流工具，从脚本编写、API 管理到调试和部署，全方位提升开发效率。
+
+## 🧠 Prompts (提示词模板)
+
+Magic-API MCP Server 提供了可复用的提示词模板，帮助您快速配置专业的 Magic-API 开发者助手。
+
+### 可用 Prompts
+
+#### magic_api_developer_guide
+生成专业的 Magic-API 开发者助手提示词，包含：
+- 完整的工具能力介绍
+- 使用指南和最佳实践
+- 错误处理建议
+- 工具选择策略
+
+**使用方法：**
+```python
+# 通过 MCP 客户端调用
+prompt = await client.get_prompt("magic_api_developer_guide")
+content = prompt.messages[0].content.text
+```
+
+**适用场景：**
+- 配置新的 AI 助手
+- 标准化开发工作流
+- 培训新团队成员
+- 创建一致的开发环境
