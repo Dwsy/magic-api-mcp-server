@@ -956,11 +956,388 @@ SYNTAX_KNOWLEDGE: Dict[str, Dict[str, Any]] = {
             }
         }
     },
+    "full_syntax": {
+        "title": "完整Magic-Script语法规则",
+        "description": "Magic-Script编程语言的完整语法规则，专为AI模型编写代码前获取",
+        "version": "latest",
+        "language": "magic-script",
+        "critical_differences": {
+            "title": "⚠️ 关键差异：Magic-Script ≠ JavaScript",
+            "alerts": [
+                {
+                    "level": "danger",
+                    "title": "牢记：Magic-Script 不是 JavaScript",
+                    "content": "Magic-Script 基于 JVM，语法类似 JS 但有重大差异。不要假设 JS 语法在此适用！"
+                },
+                {
+                    "level": "danger",
+                    "title": "牢记：Magic-Script 不是 JavaScript",
+                    "content": "Magic-Script 基于 JVM，语法类似 JS 但有重大差异。不要假设 JS 语法在此适用！"
+                },
+                {
+                    "level": "warning",
+                    "title": "循环语法差异",
+                    "content": "使用 `for (i in range(start, end))` 而不是 JS 的 for 循环。变量声明推荐 `let` 而非 `var`。"
+                },
+                {
+                    "level": "warning",
+                    "title": "无 switch 语法",
+                    "content": "Magic-Script 没有 switch 语句，使用 if-else 替代。"
+                },
+                {
+                    "level": "info",
+                    "title": "优先使用箭头函数",
+                    "content": "推荐使用箭头函数语法：`var myFunction = (a, b) => a + b;` 而不是传统函数声明。"
+                },
+                {
+                    "level": "info",
+                    "title": "数据类型严格",
+                    "content": "Magic-Script 是强类型语言，支持类型推断，但数字类型有专门的后缀 (123L, 123f, 123m 等)。"
+                },
+                {
+                    "level": "info",
+                    "title": "Java 集成特性",
+                    "content": "可以直接调用 Java 类和方法，导入语法为 `import java.lang.System;`。"
+                }
+            ]
+        },
+        "important_notes": [
+            "🎯 **语法检查**: 编写代码前务必参考此完整语法规则，避免 JS 思维定式",
+            "🔄 **版本兼容**: 语法特性可能随版本变化，请注意版本标记 (如 1.2.7+, 1.3.0+)",
+            "🚀 **最佳实践**: 优先使用箭头函数、let 声明、增强的 if/逻辑运算符",
+            "⚡ **性能考虑**: 数据库操作使用参数化查询避免 SQL 注入",
+            "🔧 **调试技巧**: 使用 `exit` 语句快速终止脚本进行调试",
+            "🧭 **核心工作流**: 执行任何变更前，遵循需求洞察→语法对齐→资源定位→实现调试→结果反馈的工具化流程"
+        ],
+        "sections": {
+            "keywords": {
+                "title": "关键字",
+                "items": [
+                    "var", "if", "else", "for", "in", "continue", "break",
+                    "exit", "try", "catch", "finally", "import", "as", "new",
+                    "true", "false", "null", "async"
+                ]
+            },
+            "operators": {
+                "title": "运算符",
+                "math": ["+", "-", "*", "/", "%", "++", "--", "+=", "-=", "*=", "/=", "%="],
+                "comparison": ["<", "<=", ">", ">=", "==", "!=", "===", "!=="],
+                "logical": ["&&", "||", "!"],
+                "ternary": ["condition ? expr1 : expr2"],
+                "other": ["?.", "..."]
+            },
+            "data_types": {
+                "title": "数据类型",
+                "numeric": {
+                    "byte": "123b",
+                    "short": "123s",
+                    "int": "123",
+                    "long": "123L",
+                    "float": "123f",
+                    "double": "123d",
+                    "BigDecimal": "123m"
+                },
+                "boolean": ["true", "false"],
+                "string": ["'hello'", '"world"', '"""多行文本"""'],
+                "regex": ["/pattern/gimuy"],
+                "functions": {
+                    "title": "函数定义",
+                    "arrow_functions": {
+                        "recommended": "优先使用箭头函数",
+                        "syntax": [
+                            "() => expr",
+                            "(p1, p2) => expr",
+                            "(p1, p2) => { statements; return value; }"
+                        ],
+                        "examples": [
+                            "var add = (a, b) => a + b;",
+                            "var process = (data) => { return data.map(item => item * 2); };"
+                        ],
+                        "note": "🚀 推荐：优先使用箭头函数语法，简洁且避免 this 绑定问题"
+                    },
+                    "traditional_functions": {
+                        "syntax": "function name(params) { statements; }",
+                        "note": "支持传统函数声明，但不推荐优先使用"
+                    }
+                },
+                "array": ["[1, 2, 3]"],
+                "map": ["{k1: v1, k2: v2}", "{[k]: v}"]
+            },
+            "type_conversion": {
+                "title": "类型转换",
+                "methods": [
+                    "value::type(defaultValue)",
+                    "value.asType(defaultValue)",
+                    "asInt", "asDouble", "asDecimal", "asFloat", "asLong",
+                    "asByte", "asShort", "asString", "asDate(formats...)"
+                ],
+                "notes": "asDate支持多种格式，数字对象10位秒，13位毫秒"
+            },
+            "type_checking": {
+                "title": "类型判断",
+                "methods": [
+                    "value.is(type)", "value.isType()",
+                    "isString", "isInt", "isLong", "isDouble", "isFloat",
+                    "isByte", "isBoolean", "isShort", "isDecimal", "isDate",
+                    "isArray", "isList", "isMap", "isCollection"
+                ]
+            },
+            "loops": {
+                "title": "循环",
+                "syntax": [
+                    "for (index, item in list) { ... }",
+                    "for (value in range(start, end)) { ... }",
+                    "for (key, value in map) { ... }"
+                ]
+            },
+            "imports": {
+                "title": "导入",
+                "syntax": [
+                    "import 'java.lang.System' as System;",  # Java类
+                    "import log;",  # 模块
+                    "import log as logger;"  # 模块重命名
+                ]
+            },
+            "object_creation": {
+                "title": "对象创建",
+                "syntax": ["new JavaClass()"]
+            },
+            "async": {
+                "title": "异步",
+                "syntax": ["async func()", "future.get()"]
+            },
+            "enhanced_features": {
+                "title": "增强特性",
+                "items": [
+                    "增强if: if(x)，x为null、空集合/Map/数组、0、空字符串、false时为false (1.2.7+)",
+                    "增强逻辑运算符: && 和 || 不强制要求布尔类型 (1.3.0+)",
+                    "可选链: a?.b 安全访问属性/方法，避免空指针",
+                    "扩展运算符: ... 展开列表或映射"
+                ]
+            },
+            "comments": {
+                "title": "注释",
+                "syntax": ["// 单行", "/* 多行 */"]
+            },
+            "database": {
+                "title": "数据库操作 (db对象，默认引入)",
+                "crud": {
+                    "select": "db.select(sql, params): List<Map>",
+                    "selectInt": "db.selectInt(sql, params): int",
+                    "selectOne": "db.selectOne(sql, params): Map",
+                    "selectValue": "db.selectValue(sql, params): Object",
+                    "update": "db.update(sql, params): int",
+                    "insert": "db.insert(sql, params, id?): Object",
+                    "batchUpdate": "db.batchUpdate(sql, List<Object[]>): int"
+                },
+                "pagination": "db.page(sql, limit?, offset?, params?)",
+                "sql_params": {
+                    "injection": "#{ }: 注入参数(防SQL注入)",
+                    "concat": "${ }: 字符串拼接(慎用，有注入风险)",
+                    "dynamic": "?{condition, expression}: 动态SQL"
+                },
+                "datasource": "db.slave.select(...)",
+                "cache": {
+                    "usage": "db.cache(name, ttl?).select/update/insert(...)",
+                    "delete": "db.deleteCache(name)"
+                },
+                "transaction": [
+                    "db.transaction(() => { ... })",  # 自动
+                    "tx = db.transaction(); tx.commit(); tx.rollback();"  # 手动
+                ],
+                "column_conversion": ["db.camel()", "db.pascal()", "db.upper()", "db.lower()", "db.normal()"],
+                "single_table": {
+                    "base": "db.table('name')",
+                    "methods": [
+                        ".logic()", ".withBlank()", ".column(col, val?)", ".primary(key, default?)",
+                        ".insert(data)", ".batchInsert(list, size?)",
+                        ".update(data, updateBlank?)", ".save(data, beforeQuery?)",
+                        ".select()", ".page()",
+                        ".where().eq/ne/lt/gt/lte/gte/in/notIn/like/notLike(col, val)"
+                    ]
+                },
+                "mybatis_integration": {
+                    "version": "1.6.0+",
+                    "tags": ["<if>", "<elseif>", "<else>", "<where>", "<foreach>", "<trim>", "<set>"],
+                    "example": """
+var sql = '''
+select * from users
+<where>
+    <if test="name != null">and name = #{name}</if>
+    <if test="age != null">and age = #{age}</if>
+</where>
+''';
+var users = db.select(sql, {name: 'a', age: 3});
+"""
+                }
+            },
+            "http_response": {
+                "title": "HTTP响应 (response模块)",
+                "import": "import response;",
+                "methods": {
+                    "page": "response.page(total, values): 构建分页响应",
+                    "json": "response.json(value): 返回JSON响应",
+                    "text": "response.text(value): 返回纯文本响应",
+                    "redirect": "response.redirect(url): 重定向",
+                    "download": "response.download(value, filename): 下载文件",
+                    "image": "response.image(value, mimeType): 返回图片响应",
+                    "headers": "response.addHeader/setHeader(key, value)",
+                    "cookies": "response.addCookie/addCookies(key, value, options?)",
+                    "stream": "response.getOutputStream(): 获取ServletOutputStream",
+                    "end": "response.end(): 取消默认json结构，通过其他方式输出结果"
+                }
+            },
+            "http_request": {
+                "title": "HTTP请求 (request模块)",
+                "import": "import request;",
+                "methods": {
+                    "getFile": "request.getFile(name): 获取上传文件(MultipartFile)",
+                    "getFiles": "request.getFiles(name): 获取上传文件列表",
+                    "getValues": "request.getValues(name): 获取同名参数值列表",
+                    "getHeaders": "request.getHeaders(name): 获取同名请求头列表",
+                    "getRequest": "request.get(): 获取MagicHttpServletRequest对象",
+                    "getClientIP": "request.getClientIP(): 获取客户端IP地址"
+                }
+            },
+            "request_parameters": {
+                "title": "请求参数获取",
+                "description": "Magic-API自动映射的请求参数变量，无需额外声明即可使用",
+                "parameters": {
+                    "url_params": {
+                        "title": "URL参数 (Query Parameters)",
+                        "description": "GET请求的URL参数自动映射为同名变量",
+                        "example": "GET /api/user?name=abc&age=49",
+                        "usage": "直接使用变量名: name, age (自动映射)",
+                        "notes": "URL中的查询参数会自动转换为同名变量"
+                    },
+                    "form_params": {
+                        "title": "表单参数 (Form Parameters)",
+                        "description": "POST请求的表单参数自动映射为同名变量",
+                        "example": "POST /api/user\nname=abc&age=49",
+                        "usage": "直接使用变量名: name, age (自动映射)",
+                        "notes": "application/x-www-form-urlencoded格式的参数自动映射"
+                    },
+                    "request_body": {
+                        "title": "请求体参数 (Request Body)",
+                        "description": "JSON或其他格式的请求体映射为body变量",
+                        "example": '{"name": "magic-api", "version": "9.9.9"}',
+                        "usage": "body.name, body.version (通过body对象访问)",
+                        "notes": [
+                            "JSON对象通过body.属性名访问",
+                            "数组或List类型时body为数组，可遍历访问",
+                            "非JSON格式需通过request模块方法获取"
+                        ]
+                    },
+                    "path_params": {
+                        "title": "路径参数 (Path Parameters)",
+                        "description": "URL路径中的参数变量",
+                        "example": "/user/{id} -> /user/123",
+                        "usage": "path.id 或 直接使用 id (推荐path.id避免冲突)",
+                        "notes": [
+                            "RESTful风格路径参数自动映射",
+                            "当URL参数与路径参数同名时，优先使用URL参数，可用path.前缀区分",
+                            "如: /user/1?id=2, id=2(来自URL), path.id=1(来自路径)"
+                        ]
+                    },
+                    "headers": {
+                        "title": "请求头参数 (Request Headers)",
+                        "description": "所有请求头统一封装为header变量",
+                        "example": "Authorization: Bearer token123",
+                        "usage": "header.authorization 或 header.token",
+                        "notes": "所有请求头字段自动转换为小写，可通过header.字段名访问"
+                    },
+                    "cookies": {
+                        "title": "Cookie参数 (Cookies)",
+                        "description": "所有Cookie统一封装为cookie变量",
+                        "example": "JSESSIONID=abc123",
+                        "usage": "cookie.jsessionid 或 cookie.JSESSIONID",
+                        "notes": "通过cookie.名称访问Cookie值"
+                    },
+                    "session": {
+                        "title": "Session参数 (Session)",
+                        "description": "HttpSession封装为session变量",
+                        "example": "session.userId = 123",
+                        "usage": "session.userId, session.username",
+                        "notes": "通过session.属性名访问Session中的值"
+                    }
+                },
+                "important_notes": [
+                    "所有参数变量自动映射，无需额外声明即可直接使用",
+                    "如果脚本自定义变量与参数变量冲突，自定义变量优先级更高",
+                    "复杂参数获取可使用request模块提供的方法",
+                    "文件上传参数需通过request.getFile()等方法获取"
+                ]
+            },
+            "java_integration": {
+                "title": "Java调用",
+                "spring_beans": [
+                    "import xx.xxx.Service; Service.method();",
+                    "import 'beanName' as service; service.method();"
+                ],
+                "static_methods": "import xxx.StringUtils; StringUtils.isBlank('');",
+                "regular_methods": "java.util/java.lang下的类可直接new，其他类需import",
+                "magic_api_interfaces": "import '@get:/api/x' as x; x();",
+                "magic_api_functions": "import '@/common/f' as f; f('1');"
+            },
+            "object_extensions": {
+                "title": "对象扩展方法",
+                "type_conversion": [
+                    "asInt(defaultValue)", "asDouble(defaultValue)", "asDecimal(defaultValue)",
+                    "asFloat(defaultValue)", "asLong(defaultValue)", "asByte(defaultValue)",
+                    "asShort(defaultValue)", "asDate(formats...)", "asString(defaultValue)"
+                ],
+                "type_checking": [
+                    "is(type)", "isString()", "isInt()", "isLong()", "isDouble()",
+                    "isFloat()", "isByte()", "isBoolean()", "isShort()", "isDecimal()",
+                    "isDate()", "isArray()", "isList()", "isMap()", "isCollection()"
+                ]
+            },
+            "coding_style": {
+                "title": "代码风格",
+                "rules": [
+                    "{} 包裹代码块",
+                    "; 结尾(通常可省略)",
+                    "类Java/JS缩进",
+                    "支持Java API、range()、Java 8+ Stream API、cn.hutool"
+                ],
+                "notes": "强类型语言，但支持类型推断"
+            }
+        }
+    },
 }
 
 def get_syntax(topic: str) -> Dict[str, Any] | None:
     """获取指定语法主题的详细信息。"""
     return SYNTAX_KNOWLEDGE.get(topic)
+
+def get_full_syntax_rules(locale: str = "zh-CN") -> Dict[str, Any]:
+    """获取完整的Magic-Script语法规则。
+
+    从SYNTAX_KNOWLEDGE中提取full_syntax配置，
+    返回完整的语法规则供AI模型编写代码前使用。
+
+    Args:
+        locale: 语言设置，默认为zh-CN
+
+    Returns:
+        包含完整语法规则的字典
+    """
+    full_syntax_config = SYNTAX_KNOWLEDGE.get("full_syntax", {})
+    if not full_syntax_config:
+        return {}
+
+    # 构建返回结果
+    result = {
+        "language": full_syntax_config.get("language", "magic-script"),
+        "version": full_syntax_config.get("version", "latest"),
+        "description": full_syntax_config.get("description", ""),
+        "locale": locale,
+        "critical_differences": full_syntax_config.get("critical_differences", {}),
+        "important_notes": full_syntax_config.get("important_notes", []),
+        "sections": full_syntax_config.get("sections", {})
+    }
+
+    return result
 
 def list_syntax_topics() -> List[str]:
     """获取所有可用的语法主题。"""
@@ -969,5 +1346,6 @@ def list_syntax_topics() -> List[str]:
 __all__ = [
     "SYNTAX_KNOWLEDGE",
     "get_syntax",
+    "get_full_syntax_rules",
     "list_syntax_topics"
 ]

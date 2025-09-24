@@ -18,8 +18,8 @@ EXAMPLES_KNOWLEDGE: Dict[str, Dict[str, Any]] = {
                     import response;
 
                     // 查询用户列表（带分页）
-                    var page = params.page ?: 1;
-                    var size = params.size ?: 10;
+                    var page = params.page ? params.page : 1;
+                    var size = params.size ? params.size : 10;
                     var keyword = params.keyword;
 
                     // 查询总数
@@ -205,8 +205,8 @@ EXAMPLES_KNOWLEDGE: Dict[str, Dict[str, Any]] = {
 
                     var countSql = "SELECT COUNT(*) FROM sys_user " + whereClause;
 
-                    params.offset = (params.page ?: 1 - 1) * (params.size ?: 10);
-                    params.size = params.size ?: 10;
+                    params.offset = (params.page ? params.page : 1 - 1) * (params.size ? params.size : 10);
+                    params.size = params.size ? params.size : 10;
 
                     var total = db.selectInt(countSql, params);
                     var list = db.select(sql, params);
@@ -234,8 +234,8 @@ EXAMPLES_KNOWLEDGE: Dict[str, Dict[str, Any]] = {
                     """;
 
                     var users = db.select(sql, {
-                        offset: (params.page ?: 1 - 1) * (params.size ?: 10),
-                        size: params.size ?: 10
+                        offset: (params.page ? params.page : 1 - 1) * (params.size ? params.size : 10),
+                        size: params.size ? params.size : 10
                     });
 
                     // 按用户分组，聚合角色信息
@@ -857,7 +857,7 @@ EXAMPLES_KNOWLEDGE: Dict[str, Dict[str, Any]] = {
                     // 设置响应头并返回文件
                     response.setHeader('Content-Disposition',
                         'attachment; filename="' + fileInfo.file_name + '"');
-                    response.setHeader('Content-Type', fileInfo.file_type ?: 'application/octet-stream');
+                    response.setHeader('Content-Type', fileInfo.file_type ? fileInfo.file_type : 'application/octet-stream');
 
                     return response.download(fileContent, fileInfo.file_name);
                 ''').strip(),
@@ -1867,7 +1867,7 @@ EXAMPLES_KNOWLEDGE: Dict[str, Dict[str, Any]] = {
                     // 调用第三方天气API
                     try {
                         var weatherResponse = http.connect('https://api.weather.com/v1/weather')
-                            .param('location', params.city ?: 'beijing')
+                            .param('location', params.city ? params.city : 'beijing')
                             .param('apikey', 'your-api-key')
                             .get()
                             .getBody();

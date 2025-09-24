@@ -29,6 +29,7 @@ class MagicAPIHTTPClient:
         self.session.headers.update(_default_headers())
         self.settings.inject_auth(self.session.headers)
 
+
         if self.settings.auth_enabled and self.settings.username and self.settings.password:
             self._login()
 

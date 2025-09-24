@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import copy
 import json
 from typing import Any, Dict, List, Optional
 
@@ -9,6 +10,43 @@ import requests
 
 from .http_client import MagicAPIHTTPClient
 from magicapi_mcp.settings import MagicAPISettings
+
+
+def build_api_save_kwargs_from_detail(detail: Dict[str, Any]) -> Dict[str, Any]:
+    """根据接口详情构建 `create_api_tool` 所需参数映射。
+
+    Args:
+        detail: `api_detail` 接口返回的完整数据。
+
+    Returns:
+        Dict[str, Any]: 可直接传递给 `create_api_tool` 的关键字参数。
+
+    Raises:
+        ValueError: 当 detail 非字典或缺少必要字段时抛出。
+    """
+
+    if not isinstance(detail, dict):
+        raise ValueError("detail must be a dict containing api information")
+
+    detail_copy = copy.deepcopy(detail)
+
+    return {
+        "group_id": detail_copy.get("groupId"),
+        "name": detail_copy.get("name"),
+        "method": (detail_copy.get("method") or "").upper() or None,
+        "path": detail_copy.get("path"),
+        "script": detail_copy.get("script"),
+        "description": detail_copy.get("description"),
+        "parameters": detail_copy.get("parameters"),
+        "headers": detail_copy.get("headers"),
+        "paths": detail_copy.get("paths"),
+        "request_body": detail_copy.get("requestBody"),
+        "request_body_definition": detail_copy.get("requestBodyDefinition"),
+        "response_body": detail_copy.get("responseBody"),
+        "response_body_definition": detail_copy.get("responseBodyDefinition"),
+        "options": detail_copy.get("options"),
+        "file_id": detail_copy.get("id"),
+    }
 
 
 class MagicAPIResourceTools:
@@ -121,47 +159,144 @@ class MagicAPIResourceTools:
         method: Optional[str] = None,
         path: Optional[str] = None,
         script: Optional[str] = None,
+        description: Optional[str] = None,
+        parameters: Optional[List[Dict[str, Any]]] = None,
+        headers: Optional[List[Dict[str, Any]]] = None,
+        paths: Optional[List[Dict[str, Any]]] = None,
+        request_body: Optional[str] = None,
+        request_body_definition: Optional[Dict[str, Any]] = None,
+        response_body: Optional[str] = None,
+        response_body_definition: Optional[Dict[str, Any]] = None,
+        options: Optional[List[Dict[str, Any]]] = None,
         apis_data: Optional[List[Dict[str, Any]]] = None,
+        file_id: Optional[str] = None,
     ) -> Dict[str, Any]:
         """
-        创建API接口（支持单个和批量操作）。
+        保存API接口（支持单个创建或更新操作，包含完整API配置）。
 
         Args:
-            group_id: 分组ID（单个操作）
-            name: API名称（单个操作）
-            method: HTTP方法（单个操作）
-            path: API路径（单个操作）
-            script: 脚本内容（单个操作）
-            apis_data: API数据列表（批量操作）
+            group_id: 分组ID（创建操作必需）
+            name: API名称（创建操作必需）
+            method: HTTP方法（创建操作必需）
+            path: API路径（创建操作必需）
+            script: 脚本内容（创建操作必需）
+            description: API描述（可选）
+            parameters: 查询参数列表（可选）
+            headers: 请求头列表（可选）
+            paths: 路径变量列表（可选）
+            request_body: 请求体示例（可选）
+            request_body_definition: 请求体结构定义（可选）
+            response_body: 响应体示例（可选）
+            response_body_definition: 响应体结构定义（可选）
+            options: 接口选项配置（可选）
+            apis_data: API数据列表（批量操作，已废弃）
+            file_id: 文件ID（更新操作必需，用于标识要更新的API）
 
         Returns:
-            单个操作返回单个结果，批量操作返回汇总结果
+            保存成功返回结果，失败返回错误信息
         """
         # 判断是批量操作还是单个操作
         if apis_data is not None:
             return self._batch_create_apis(apis_data)
         else:
-            return self._create_single_api(group_id, name, method, path, script)
+            return self._save_single_api(
+                group_id=group_id,
+                name=name,
+                method=method,
+                path=path,
+                script=script,
+                description=description,
+                parameters=parameters,
+                headers=headers,
+                paths=paths,
+                request_body=request_body,
+                request_body_definition=request_body_definition,
+                response_body=response_body,
+                response_body_definition=response_body_definition,
+                options=options,
+                file_id=file_id
+            )
 
-    def _create_single_api(
+    def _save_single_api(
         self,
-        group_id: str,
-        name: str,
-        method: str,
-        path: str,
-        script: str,
+        group_id: Optional[str] = None,
+        name: Optional[str] = None,
+        method: Optional[str] = None,
+        path: Optional[str] = None,
+        script: Optional[str] = None,
+        description: Optional[str] = None,
+        parameters: Optional[List[Dict[str, Any]]] = None,
+        headers: Optional[List[Dict[str, Any]]] = None,
+        paths: Optional[List[Dict[str, Any]]] = None,
+        request_body: Optional[str] = None,
+        request_body_definition: Optional[Dict[str, Any]] = None,
+        response_body: Optional[str] = None,
+        response_body_definition: Optional[Dict[str, Any]] = None,
+        options: Optional[List[Dict[str, Any]]] = None,
+        file_id: Optional[str] = None,
     ) -> Dict[str, Any]:
-        """创建单个API接口。"""
-        file_id = self.manager.create_api_file(
-            group_id=group_id,
-            name=name,
-            method=method,
-            path=path,
-            script=script,
-        )
+        """保存单个API接口（支持创建和更新操作）。"""
+        # 构建完整的API数据对象，包含所有配置选项
+        api_data = {}
+
+        # 根据是否提供file_id判断是创建还是更新
         if file_id:
-            return {"success": True, "file_id": file_id, "name": name, "path": path}
-        return {"error": {"code": "create_failed", "message": f"创建API接口 '{name}' 失败"}}
+            # 更新操作：在请求体中包含id字段
+            api_data["id"] = file_id
+            operation = "更新"
+        else:
+            # 创建操作：必需的基本字段
+            api_data["name"] = name
+            api_data["method"] = method.upper()
+            api_data["path"] = path
+            api_data["script"] = script
+            api_data["groupId"] = group_id
+            operation = "创建"
+
+        # 添加可选字段（创建和更新都适用）
+        if description is not None:
+            api_data["description"] = description
+
+        if parameters is not None:
+            api_data["parameters"] = parameters
+        elif not file_id:  # 创建时设置默认值
+            api_data["parameters"] = []
+
+        if headers is not None:
+            api_data["headers"] = headers
+        elif not file_id:  # 创建时设置默认值
+            api_data["headers"] = []
+
+        if paths is not None:
+            api_data["paths"] = paths
+        elif not file_id:  # 创建时设置默认值
+            api_data["paths"] = []
+
+        if request_body is not None:
+            api_data["requestBody"] = request_body
+        elif not file_id:  # 创建时设置默认值
+            api_data["requestBody"] = ""
+
+        if request_body_definition is not None:
+            api_data["requestBodyDefinition"] = request_body_definition
+
+        if response_body is not None:
+            api_data["responseBody"] = response_body
+        elif not file_id:  # 创建时设置默认值
+            api_data["responseBody"] = ""
+
+        if response_body_definition is not None:
+            api_data["responseBodyDefinition"] = response_body_definition
+
+        if options is not None:
+            api_data["options"] = options
+        elif not file_id:  # 创建时设置默认值
+            api_data["options"] = []
+
+        result_file_id = self.manager.save_api_file(group_id, api_data)
+        if result_file_id:
+            return {"success": True, "file_id": result_file_id, "name": name or "updated_api", "path": path or "updated_path", "operation": operation}
+        return {"error": {"code": f"{operation.lower()}_failed", "message": f"{operation}API接口失败"}}
 
     def _batch_create_apis(self, apis_data: List[Dict[str, Any]]) -> Dict[str, Any]:
         """批量创建API接口。"""
@@ -171,9 +306,18 @@ class MagicAPIResourceTools:
                 result = self._create_single_api(
                     group_id=api_data["group_id"],
                     name=api_data["name"],
-                    method=api_data["method"],
+                    method=api_data.get("method", "GET"),
                     path=api_data["path"],
-                    script=api_data["script"]
+                    script=api_data["script"],
+                    description=api_data.get("description"),
+                    parameters=api_data.get("parameters"),
+                    headers=api_data.get("headers"),
+                    paths=api_data.get("paths"),
+                    request_body=api_data.get("request_body") or api_data.get("requestBody"),
+                    request_body_definition=api_data.get("request_body_definition") or api_data.get("requestBodyDefinition"),
+                    response_body=api_data.get("response_body") or api_data.get("responseBody"),
+                    response_body_definition=api_data.get("response_body_definition") or api_data.get("responseBodyDefinition"),
+                    options=api_data.get("options")
                 )
                 results.append({
                     "name": api_data["name"],
@@ -196,17 +340,28 @@ class MagicAPIResourceTools:
 
     def copy_resource_tool(self, src_id: str, target_id: str) -> Dict[str, Any]:
         """复制资源到指定位置。"""
-        new_group_id = self.manager.copy_group(src_id, target_id)
-        if new_group_id:
-            return {"success": True, "new_group_id": new_group_id, "src_id": src_id, "target_id": target_id}
+        new_resource_id = self.manager.copy_resource(src_id, target_id)
+        if new_resource_id:
+            return {"success": True, "new_resource_id": new_resource_id, "src_id": src_id, "target_id": target_id}
         return {"error": {"code": "copy_failed", "message": f"复制资源 {src_id} 失败"}}
 
     def move_resource_tool(self, src_id: str, target_id: str) -> Dict[str, Any]:
         """移动资源到指定位置。"""
-        success = self.manager.move_resource(src_id, target_id)
-        if success:
-            return {"success": True, "src_id": src_id, "target_id": target_id}
-        return {"error": {"code": "move_failed", "message": f"移动资源 {src_id} 失败"}}
+        try:
+            # 验证参数
+            if not src_id or not target_id:
+                return {"error": {"code": "invalid_params", "message": "src_id和target_id不能为空"}}
+
+            # 检查src_id和target_id是否相同
+            if src_id == target_id:
+                return {"error": {"code": "invalid_params", "message": "源资源ID和目标ID不能相同"}}
+
+            success = self.manager.move_resource(src_id, target_id)
+            if success:
+                return {"success": True, "src_id": src_id, "target_id": target_id}
+            return {"error": {"code": "move_failed", "message": f"移动资源 {src_id} 失败"}}
+        except Exception as e:
+            return {"error": {"code": "move_error", "message": f"移动资源时发生异常: {str(e)}"}}
 
     def delete_resource_tool(
         self,
@@ -648,6 +803,36 @@ class MagicAPIResourceManager:
 
         return None
 
+    def copy_resource(self, src_resource_id: str, target_id: str) -> Optional[str]:
+        """
+        复制资源（文件或分组）到指定位置
+
+        Args:
+            src_resource_id: 源资源ID（可以是文件ID或分组ID）
+            target_id: 目标位置ID（如果是复制到分组，则为目标分组ID；如果是文件复制，则为目标分组ID）
+
+        Returns:
+            复制成功返回新资源ID，失败返回None
+        """
+        try:
+            # 首先尝试复制分组
+            new_group_id = self.copy_group(src_resource_id, target_id)
+            if new_group_id:
+                return new_group_id
+
+            # 如果分组复制失败，尝试复制文件
+            print(f"📄 分组复制失败，尝试复制文件: {src_resource_id}")
+            new_file_id = self.copy_file(src_resource_id, target_id)
+            if new_file_id:
+                return new_file_id
+
+            print(f"❌ 复制资源失败: {src_resource_id}")
+            return None
+
+        except Exception as e:
+            print(f"❌ 复制资源时出错: {e}")
+            return None
+
     def copy_group(self, src_group_id: str, target_parent_id: str = "0") -> Optional[str]:
         """
         复制分组目录
@@ -661,12 +846,20 @@ class MagicAPIResourceManager:
             复制成功返回新分组ID，失败返回None
         """
         try:
+            # 使用与移动API相同的headers格式
+            copy_headers = {
+                'Content-Type': 'application/x-www-form-urlencoded',
+                'Accept': 'application/json, text/plain, */*',
+                'magic-token': 'unauthorization'
+            }
+
             response = self.session.post(
                 f"{self.base_url}/magic/web/resource/folder/copy",
                 data={
                     'src': src_group_id,
                     'target': target_parent_id
-                }
+                },
+                headers=copy_headers
             )
 
             if response.status_code == 200:
@@ -684,6 +877,65 @@ class MagicAPIResourceManager:
 
         return None
 
+    def copy_file(self, src_file_id: str, target_group_id: str) -> Optional[str]:
+        """
+        复制文件到指定分组
+        通过获取源文件详情并创建新文件的方式实现复制
+
+        Args:
+            src_file_id: 源文件ID
+            target_group_id: 目标分组ID
+
+        Returns:
+            复制成功返回新文件ID，失败返回None
+        """
+        try:
+            # 获取源文件详情
+            file_detail = self.get_file_detail(src_file_id)
+            if not file_detail:
+                print(f"❌ 无法获取源文件详情: {src_file_id}")
+                return None
+
+            # 构建新的文件名（添加"副本"后缀）
+            original_name = file_detail.get('name', 'Unknown')
+            new_name = f"{original_name}_副本"
+
+            # 准备API数据
+            api_data = {
+                'name': new_name,
+                'method': file_detail.get('method', 'GET'),
+                'path': file_detail.get('path', ''),
+                'script': file_detail.get('script', ''),
+                'groupId': target_group_id,
+                'parameters': file_detail.get('parameters', []),
+                'headers': file_detail.get('headers', []),
+                'paths': file_detail.get('paths', []),
+                'requestBody': file_detail.get('requestBody', ''),
+                'responseBody': file_detail.get('responseBody', ''),
+                'options': file_detail.get('options', [])
+            }
+
+            # 如果有请求体定义，也复制
+            if 'requestBodyDefinition' in file_detail:
+                api_data['requestBodyDefinition'] = file_detail['requestBodyDefinition']
+            if 'responseBodyDefinition' in file_detail:
+                api_data['responseBodyDefinition'] = file_detail['responseBodyDefinition']
+            if 'description' in file_detail:
+                api_data['description'] = file_detail['description']
+
+            # 保存新文件
+            new_file_id = self.save_api_file(target_group_id, api_data)
+            if new_file_id:
+                print(f"✅ 复制文件成功: {src_file_id} -> {new_file_id} ({new_name})")
+                return new_file_id
+            else:
+                print(f"❌ 保存新文件失败")
+                return None
+
+        except Exception as e:
+            print(f"❌ 复制文件时出错: {e}")
+            return None
+
     def delete_resource(self, resource_id: str) -> bool:
         """
         删除资源（分组或文件）
@@ -696,9 +948,16 @@ class MagicAPIResourceManager:
             删除成功返回True，失败返回False
         """
         try:
+            delete_headers = {
+                'Content-Type': 'application/x-www-form-urlencoded',
+                'Accept': 'application/json, text/plain, */*',
+                'magic-token': 'unauthorization'
+            }
+
             response = self.session.post(
                 f"{self.base_url}/magic/web/resource/delete",
-                data={'id': resource_id}
+                data={'id': resource_id},
+                headers=delete_headers
             )
 
             if response.status_code == 200:
@@ -721,34 +980,63 @@ class MagicAPIResourceManager:
         基于 MagicResourceController.move 实现
 
         Args:
-            src_id: 源资源ID
+            src_id: 源资源ID（可以是文件ID或分组ID）
             target_group_id: 目标分组ID
 
         Returns:
             移动成功返回True，失败返回False
         """
         try:
+            print(f"🔄 移动资源: {src_id} -> {target_group_id}")
+
+            # 验证目标是否为分组（如果能获取到文件详情，说明是文件；如果获取不到，可能是分组）
+            target_detail = self.get_file_detail(target_group_id)
+            if target_detail:
+                # 目标是文件，不能作为移动目标
+                print(f"❌ 移动目标必须是分组，目标ID {target_group_id} 是文件")
+                return False
+
+            # 尝试移动资源（使用form-urlencoded格式，与curl命令一致）
+            move_headers = {
+                'Content-Type': 'application/x-www-form-urlencoded',
+                'Accept': 'application/json, text/plain, */*',
+                'magic-token': 'unauthorization'
+            }
+
             response = self.session.post(
                 f"{self.base_url}/magic/web/resource/move",
                 data={
                     'src': src_id,
                     'groupId': target_group_id
-                }
+                },
+                headers=move_headers
             )
+
+            print(f"📊 响应状态: {response.status_code}")
 
             if response.status_code == 200:
                 result = response.json()
+                print(f"📄 响应内容: {result}")
+
                 if result.get('code') == 1 and result.get('data'):
                     print(f"✅ 移动资源成功: {src_id} -> {target_group_id}")
                     return True
                 else:
-                    print(f"❌ 移动资源失败: {result.get('message', '未知错误')}")
+                    error_msg = result.get('message', '未知错误')
+                    print(f"❌ 移动资源失败: {error_msg}")
+
+                    # 提供更详细的错误信息
+                    if '找不到' in error_msg or 'not found' in error_msg.lower():
+                        print("💡 提示: 请检查源资源ID和目标分组ID是否存在")
+                    elif '权限' in error_msg or 'permission' in error_msg.lower():
+                        print("💡 提示: 请检查是否有移动权限")
+                    return False
             else:
                 print(f"❌ 请求失败: {response.status_code} - {response.text}")
+                return False
         except Exception as e:
             print(f"❌ 移动资源时出错: {e}")
-
-        return False
+            return False
 
     def get_resource_tree(self) -> Optional[Dict]:
         """
@@ -823,9 +1111,16 @@ class MagicAPIResourceManager:
             锁定成功返回True，失败返回False
         """
         try:
+            lock_headers = {
+                'Content-Type': 'application/x-www-form-urlencoded',
+                'Accept': 'application/json, text/plain, */*',
+                'magic-token': 'unauthorization'
+            }
+
             response = self.session.post(
                 f"{self.base_url}/magic/web/resource/lock",
-                data={'id': resource_id}
+                data={'id': resource_id},
+                headers=lock_headers
             )
 
             if response.status_code == 200:
@@ -854,9 +1149,16 @@ class MagicAPIResourceManager:
             解锁成功返回True，失败返回False
         """
         try:
+            unlock_headers = {
+                'Content-Type': 'application/x-www-form-urlencoded',
+                'Accept': 'application/json, text/plain, */*',
+                'magic-token': 'unauthorization'
+            }
+
             response = self.session.post(
                 f"{self.base_url}/magic/web/resource/unlock",
-                data={'id': resource_id}
+                data={'id': resource_id},
+                headers=unlock_headers
             )
 
             if response.status_code == 200:
@@ -891,7 +1193,7 @@ class MagicAPIResourceManager:
             required_fields = ['name', 'method', 'path', 'script']
             for field in required_fields:
                 if field not in api_data:
-                    print(f"❌ 缺少必要字段: {field}")
+                    print(f"❌ save_api_file1缺少必要字段: {field}")
                     return None
 
             # 构建完整的API对象，基于现有API的结构

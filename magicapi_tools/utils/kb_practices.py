@@ -71,7 +71,7 @@ PRACTICES_KNOWLEDGE: Dict[str, Any] = {
                 "🧭 准备阶段 → 调用 `system.get_assistant_metadata` 确认环境、鉴权与可用工具，如需流程参考使用 `get_development_workflow`。",
                 "🎯 需求拆解 → 使用 `get_magic_api_docs`、`get_best_practices`、`get_development_workflow` 等工具梳理目标与约束，形成行动计划。",
                 "🔍 信息采集 → 通过 `search_api_scripts`、`get_api_details_by_path`、`get_resource_tree`、`search_api_endpoints` 等工具获取最新代码与资源状态。",
-                "🛠️ 行动执行 → 在掌握信息后，调用 `call_magic_api`、`create_api_resource`、`copy_resource`、`move_resource`、`set_breakpoint`、`call_api_with_debug` 等工具完成具体操作。",
+                "🛠️ 行动执行 → 在掌握信息后，调用 `call_magic_api`、`save_api_endpoint`、`replace_api_script`、`copy_resource`、`move_resource`、`set_breakpoint`、`call_api_with_debug` 等工具完成具体操作。",
                 "✅ 结果校验 → 使用 `call_magic_api`、`get_practices_guide(guide_type='debugging')`、`list_backups` 或 `get_common_pitfalls` 复核效果与风险点。",
                 "📄 输出总结 → 基于工具返回内容陈述结论，明确指出使用过的核心工具及关键数据，若缺乏足够工具证据需说明限制。"
             ],
@@ -79,12 +79,12 @@ PRACTICES_KNOWLEDGE: Dict[str, Any] = {
                 "准备": ["system.get_assistant_metadata", "get_development_workflow"],
                 "调研": ["get_magic_api_docs", "get_best_practices", "get_common_pitfalls", "get_practices_guide"],
                 "资产盘点": ["get_resource_tree", "get_api_details_by_path", "get_api_details_by_id", "search_api_endpoints", "search_api_scripts"],
-                "执行": ["call_magic_api", "create_api_resource", "copy_resource", "move_resource", "call_api_with_debug", "set_breakpoint"],
+                "执行": ["call_magic_api", "save_api_endpoint", "replace_api_script", "copy_resource", "move_resource", "call_api_with_debug", "set_breakpoint"],
                 "收尾": ["list_backups", "rollback_backup", "get_practices_guide", "get_common_pitfalls"]
             }
         },
-        "create_api": {
-            "description": "从需求到上线的接口创建流程",
+        "api_script_development": {
+            "description": "从需求到上线的API脚本开发流程（包含创建和编辑）",
             "principles": [
                 "脚本实现前必须确认目标分组与路径，避免覆盖现有接口",
                 "接口发布前通过工具完成至少一次功能与风险检查"
@@ -95,13 +95,13 @@ PRACTICES_KNOWLEDGE: Dict[str, Any] = {
                 "✍️ 脚本准备 → 使用 `get_api_details_by_path` 或 `get_api_details_by_id` 获取参考脚本，确保参数与响应模型一致。",
                 "🧪 功能验证 → 通过 `call_magic_api` 或 `call_api_with_debug` 调用接口，核对响应、日志与断点状态。",
                 "🛡️ 质量检查 → 使用 `get_practices_guide(guide_type='performance')`、`get_practices_guide(guide_type='security')` 以及 `get_common_pitfalls` 检查性能与安全风险。",
-                "🚀 上线发布 → 调用 `create_api_resource` 完成保存或复制，通过 `get_resource_tree`、`list_backups` 确认资源已同步。"
+                "🚀 上线发布 → 调用 `save_api_endpoint` 完成保存或复制，通过 `get_resource_tree`、`list_backups` 确认资源已同步。"
             ],
             "tool_hints": {
                 "结构规划": ["get_resource_tree", "search_api_endpoints", "get_development_workflow"],
                 "脚本设计": ["get_magic_script_syntax", "get_best_practices", "list_examples", "get_magic_api_docs"],
                 "校验": ["call_magic_api", "call_api_with_debug", "get_practices_guide", "get_common_pitfalls"],
-                "发布": ["create_api_resource", "copy_resource", "get_resource_tree", "list_backups"]
+                "发布": ["save_api_endpoint", "replace_api_script", "copy_resource", "get_resource_tree", "list_backups"]
             }
         },
         "diagnose": {
@@ -136,14 +136,14 @@ PRACTICES_KNOWLEDGE: Dict[str, Any] = {
                 "📊 建立基线 → 使用 `call_magic_api` 收集响应数据，并通过 `get_practices_guide(guide_type='performance')` 明确指标。",
                 "🔎 瓶颈定位 → 借助 `search_api_scripts` 与 `get_api_details_by_path` 检查循环、慢查询及可疑脚本片段。",
                 "🧠 策略制定 → 参考 `get_best_practices`、`get_practices_guide(guide_type='performance', category='database')` 等建议制定优化方案。",
-                "🛠️ 实施优化 → 使用 `create_api_resource`、`copy_resource` 或 `move_resource` 调整资源，必要时结合 `call_api_with_debug` 验证 SQL。",
+                "🛠️ 实施优化 → 使用 `save_api_endpoint`、`replace_api_script`、`copy_resource` 或 `move_resource` 调整资源，必要时结合 `call_api_with_debug` 验证 SQL。",
                 "🧪 效果验证 → 再次调用 `call_magic_api` 比对响应指标，并利用 `get_practices_guide(guide_type='performance')` 复盘剩余瓶颈。",
                 "📈 持续监控 → 通过 `list_backups`、`get_resource_tree` 记录优化快照，定期复测保证性能稳定。"
             ],
             "tool_hints": {
                 "基线": ["call_magic_api", "get_practices_guide"],
                 "分析": ["search_api_scripts", "get_api_details_by_path", "get_best_practices"],
-                "实施": ["create_api_resource", "copy_resource", "move_resource", "call_api_with_debug"],
+                "实施": ["save_api_endpoint", "replace_api_script", "copy_resource", "move_resource", "call_api_with_debug"],
                 "验证": ["call_magic_api", "get_practices_guide"],
                 "监控": ["list_backups", "get_resource_tree"]
             }
@@ -157,7 +157,7 @@ PRACTICES_KNOWLEDGE: Dict[str, Any] = {
             "steps": [
                 "🧭 范围识别 → 使用 `search_api_scripts`、`get_api_details_by_path`、`get_resource_tree` 确定重复逻辑与依赖。",
                 "🧱 模块抽取 → 参考 `list_examples` 与 `get_best_practices` 设计公共模块或脚本结构。",
-                "⚙️ 实施变更 → 借助 `create_api_resource`、`copy_resource`、`move_resource` 分步调整资源结构。",
+                "⚙️ 实施变更 → 借助 `save_api_endpoint`、`copy_resource`、`move_resource` 分步调整资源结构。",
                 "🧪 行为校验 → 使用 `call_magic_api`、`call_api_with_debug`、`set_breakpoint` 确认核心路径无回归。",
                 "🧰 文档同步 → 通过 `get_development_workflow`、`get_magic_api_docs` 更新说明，必要时生成示例。",
                 "🧾 变更固化 → 借助 `create_full_backup` 或 `list_backups` 留存版本，便于审计与回滚。"
@@ -165,7 +165,7 @@ PRACTICES_KNOWLEDGE: Dict[str, Any] = {
             "tool_hints": {
                 "识别": ["search_api_scripts", "get_api_details_by_path", "get_resource_tree"],
                 "设计": ["list_examples", "get_best_practices", "get_development_workflow"],
-                "实施": ["create_api_resource", "copy_resource", "move_resource"],
+                "实施": ["save_api_endpoint", "copy_resource", "move_resource"],
                 "验证": ["call_magic_api", "call_api_with_debug", "set_breakpoint"],
                 "归档": ["create_full_backup", "list_backups"]
             }
@@ -322,7 +322,7 @@ def get_workflow(task: str = None) -> Dict[str, Any] | List[Dict[str, Any]]:
     """获取工作流指南。
 
     Args:
-        task: 工作流任务类型，可选值: create_api, diagnose, optimize, refactor
+        task: 工作流任务类型，可选值: api_script_development, diagnose, optimize, refactor
               如果不指定则返回所有工作流
 
     Returns:
