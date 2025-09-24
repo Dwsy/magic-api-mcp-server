@@ -1,9 +1,35 @@
 [project]
-name = "magic-api-tools"
+name = "magic-api-mcp-server"
 version = "0.1.0"
-description = "Add your description here"
+description = "Magic-API MCP Server - A Model Context Protocol server for Magic-API development"
 readme = "README.md"
+license = {text = "MIT"}
 requires-python = ">=3.13"
+authors = [
+    {name = "Dwsy", email = "dwsycode@gmail.com"},
+]
+maintainers = [
+    {name = "Dwsy", email = "dwsycode@gmail.com"},
+]
+keywords = [
+    "magic-api",
+    "mcp",
+    "model-context-protocol",
+    "ai-assistant",
+    "api-development",
+    "tool-integration",
+]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.13",
+    "Topic :: Software Development :: Libraries :: Python Modules",
+    "Topic :: System :: Distributed Computing",
+    "Topic :: Internet :: WWW/HTTP",
+]
 dependencies = [
     "beautifulsoup4>=4.13.5",
     "fastmcp>=2.12.3",
@@ -13,5 +39,20 @@ dependencies = [
     "websockets>=15.0.1",
 ]
 
+[project.urls]
+Homepage = "https://github.com/Dwsy/magic-api-mcp-server"
+Documentation = "https://github.com/Dwsy/magic-api-mcp-server#readme"
+Repository = "https://github.com/Dwsy/magic-api-mcp-server.git"
+Issues = "https://github.com/Dwsy/magic-api-mcp-server/issues"
+Changelog = "https://github.com/Dwsy/magic-api-mcp-server/blob/main/CHANGELOG.md"
+
 [tool.setuptools.packages.find]
 include = ["magicapi_mcp*", "magicapi_tools*"]
+
+[dependency-groups]
+dev = [
+    "twine>=6.2.0",
+]
+
+[project.scripts]
+magic-api-mcp-server = "magicapi_mcp.magicapi_assistant:main"
