@@ -36,6 +36,7 @@ dependencies = [
     "html2text>=2025.4.15",
     "pydantic>=2.11.9",
     "pyreadline3>=3.4.1; sys_platform == 'win32'",
+    "readline>=6.2; sys_platform != 'win32'",
     "requests>=2.32.5",
     "websockets>=15.0.1",
 ]
@@ -56,4 +57,4 @@ dev = [
 ]
 
 [project.scripts]
-magic-api-mcp-server = "magicapi_mcp.magicapi_assistant:main"
+magic-api-mcp-server = "sh:uvx magic-api-mcp-server@latest"
