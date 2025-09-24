@@ -1,0 +1,23 @@
+[
+  {
+    "group_id": "group_id_1",
+    "name": "获取用户信息",
+    "method": "GET",
+    "path": "/user/info",
+    "script": "var userId = request.getParameter('id');\nvar sql = 'SELECT * FROM users WHERE id = ?';\nvar user = db.selectOne(sql, [userId]);\nreturn user;"
+  },
+  {
+    "group_id": "group_id_2",
+    "name": "创建订单",
+    "method": "POST",
+    "path": "/order/create",
+    "script": "var orderData = request.getParameter('data');\nvar sql = 'INSERT INTO orders (user_id, amount, status) VALUES (?, ?, ?)';\nvar orderId = db.insert(sql, [orderData.user_id, orderData.amount, 'pending']);\nreturn {order_id: orderId, status: 'created'};"
+  },
+  {
+    "group_id": "group_id_3",
+    "name": "获取商品列表",
+    "method": "GET",
+    "path": "/product/list",
+    "script": "var page = request.getParameter('page').asInt(1);\nvar size = request.getParameter('size').asInt(10);\nvar offset = (page - 1) * size;\nvar sql = 'SELECT * FROM products LIMIT ? OFFSET ?';\nvar products = db.select(sql, [size, offset]);\nreturn products;"
+  }
+]

@@ -1,0 +1,23 @@
+[
+  {
+    "name": "用户管理",
+    "parent_id": "0",
+    "group_type": "api",
+    "path": "/user"
+  },
+  {
+    "name": "订单管理",
+    "parent_id": "0",
+    "group_type": "api",
+    "path": "/order"
+  },
+  {
+    "name": "商品管理",
+    "parent_id": "0",
+    "group_type": "api",
+    "path": "/product",
+    "options": {
+      "description": "商品相关接口分组"
+    }
+  }
+]
