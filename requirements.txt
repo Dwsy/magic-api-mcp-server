@@ -1,0 +1,7 @@
+# Magic-API 开发工具集依赖包
+requests>=2.25.0    # 用于HTTP请求和API调用
+websockets>=10.0    # 用于WebSocket连接
+fastmcp>=0.1.0  # MCP 服务器框架，建议使用 uv 安装
+
+mcp~=1.14.1
+pydantic~=2.11.9

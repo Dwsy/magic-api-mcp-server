@@ -1,0 +1,17 @@
+[project]
+name = "magic-api-tools"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+requires-python = ">=3.13"
+dependencies = [
+    "beautifulsoup4>=4.13.5",
+    "fastmcp>=2.12.3",
+    "html2text>=2025.4.15",
+    "pydantic>=2.11.9",
+    "requests>=2.32.5",
+    "websockets>=15.0.1",
+]
+
+[tool.setuptools.packages.find]
+include = ["magicapi_mcp*", "magicapi_tools*"]
