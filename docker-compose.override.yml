@@ -1,0 +1,24 @@
+# 开发环境配置覆盖文件
+# 此文件会被 docker-compose 自动加载，覆盖 docker-compose.yml 中的配置
+# 仅在开发环境中使用，不应提交到版本控制
+
+version: '3.8'
+
+services:
+  magic-api-mcp-server:
+    # 开发模式：挂载源代码以支持热重载
+    volumes:
+      - .:/app:cached
+      - ./logs:/app/logs
+
+    # 开发环境变量
+    environment:
+      - LOG_LEVEL=DEBUG
+      - MAGIC_API_TIMEOUT_SECONDS=60.0
+
+    # 开发模式下禁用健康检查（因为代码可能会频繁更改）
+    healthcheck:
+      disable: true
+
+    # 开发模式使用不同的重启策略
+    restart: "no"

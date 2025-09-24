@@ -620,7 +620,7 @@ class MagicAPIResourceManager:
         if path is not None:
             group_data["path"] = path
 
-        if options is not None:
+        if options is not None and options != {}:
             group_data["options"] = options
 
         try:
@@ -894,35 +894,34 @@ class MagicAPIResourceManager:
                     print(f"❌ 缺少必要字段: {field}")
                     return None
 
+            # 构建完整的API对象，基于现有API的结构
+            full_api_data = {
+                "name": api_data['name'],
+                "method": api_data['method'].upper(),
+                "path": api_data['path'],
+                "script": api_data['script'],
+                "groupId": group_id,
+                "parameters": [],
+                "options": [],
+                "requestBody": "",
+                "headers": [],
+                "paths": [],
+                "responseBody": ""
+            }
+
             # 将API数据转换为JSON字符串
-            api_json = json.dumps(api_data, ensure_ascii=False)
+            api_json = json.dumps(full_api_data, ensure_ascii=False)
             print(f"📝 保存API文件请求数据: {api_json[:100]}...")
 
-            # 使用application/octet-stream类型发送
+            # 使用application/json类型发送完整的API对象
             response = self.session.post(
                 f"{self.base_url}/magic/web/resource/file/api/save",
-                data=api_json.encode('utf-8'),
+                json=full_api_data,
                 params={
                     'groupId': group_id,
                     'auto': '1' if auto_save else '0'
-                },
-                headers={'Content-Type': 'application/octet-stream'}
+                }
             )
-
-            # 如果失败，尝试另一种格式
-            if response.status_code != 200 or (response.status_code == 200 and response.json().get('code') != 1):
-                print(f"⚠️  第一次尝试失败，尝试使用POST参数格式...")
-                response = self.session.post(
-                    f"{self.base_url}/magic/web/resource/file/api/save",
-                    data={
-                        'groupId': group_id,
-                        'name': api_data['name'],
-                        'method': api_data['method'],
-                        'path': api_data['path'],
-                        'script': api_data['script'],
-                        'auto': '1' if auto_save else '0'
-                    }
-                )
 
             print(f"📊 响应状态: {response.status_code}")
             print(f"📄 响应内容: {response.text}")
