@@ -60,50 +60,115 @@ PRACTICES_KNOWLEDGE: Dict[str, Any] = {
         "集合遍历时删除元素注意并发修改异常"
     ],
     "workflows": {
+        "mcp_tool_driven": {
+            "description": "MCP 工具优先的 Magic-API 助手通用流程",
+            "principles": [
+                "所有回答必须依据 MCP 工具返回的数据或状态，不得凭记忆或猜测输出结论",
+                "遇到信息缺口时优先调用文档、查询、搜索类工具补充事实，再继续推理",
+                "关键操作需在执行前后通过相关工具进行快照或校验，确保可回溯、可回滚"
+            ],
+            "steps": [
+                "🧭 准备阶段 → 调用 `system.get_assistant_metadata` 确认环境、鉴权与可用工具，如需流程参考使用 `get_development_workflow`。",
+                "🎯 需求拆解 → 使用 `get_magic_api_docs`、`get_best_practices`、`get_development_workflow` 等工具梳理目标与约束，形成行动计划。",
+                "🔍 信息采集 → 通过 `search_api_scripts`、`get_api_details_by_path`、`get_resource_tree`、`search_api_endpoints` 等工具获取最新代码与资源状态。",
+                "🛠️ 行动执行 → 在掌握信息后，调用 `call_magic_api`、`create_api_resource`、`copy_resource`、`move_resource`、`set_breakpoint`、`call_api_with_debug` 等工具完成具体操作。",
+                "✅ 结果校验 → 使用 `call_magic_api`、`get_practices_guide(guide_type='debugging')`、`list_backups` 或 `get_common_pitfalls` 复核效果与风险点。",
+                "📄 输出总结 → 基于工具返回内容陈述结论，明确指出使用过的核心工具及关键数据，若缺乏足够工具证据需说明限制。"
+            ],
+            "tool_hints": {
+                "准备": ["system.get_assistant_metadata", "get_development_workflow"],
+                "调研": ["get_magic_api_docs", "get_best_practices", "get_common_pitfalls", "get_practices_guide"],
+                "资产盘点": ["get_resource_tree", "get_api_details_by_path", "get_api_details_by_id", "search_api_endpoints", "search_api_scripts"],
+                "执行": ["call_magic_api", "create_api_resource", "copy_resource", "move_resource", "call_api_with_debug", "set_breakpoint"],
+                "收尾": ["list_backups", "rollback_backup", "get_practices_guide", "get_common_pitfalls"]
+            }
+        },
         "create_api": {
             "description": "从需求到上线的接口创建流程",
+            "principles": [
+                "脚本实现前必须确认目标分组与路径，避免覆盖现有接口",
+                "接口发布前通过工具完成至少一次功能与风险检查"
+            ],
             "steps": [
-                "resource_tree → path_to_id：查找相近接口/分组",
-                "api_detail：对齐脚本结构与模块导入",
-                "syntax/examples：补齐语法与参考实现",
-                "编写脚本并在 Magic-API UI 保存",
-                "call：使用 MCP 工具或 `magic_api_client.py` 验证",
-                "best_practices/pitfalls：检查风险项",
-                "部署上线并监控运行状态"
-            ]
+                "📂 资源定位 → 使用 `get_resource_tree` 与 `search_api_endpoints` 审阅分组结构和已有接口路径。",
+                "🧩 设计对齐 → 借助 `get_magic_script_syntax`、`get_best_practices`、`list_examples` 完成脚本结构与依赖模块评估。",
+                "✍️ 脚本准备 → 使用 `get_api_details_by_path` 或 `get_api_details_by_id` 获取参考脚本，确保参数与响应模型一致。",
+                "🧪 功能验证 → 通过 `call_magic_api` 或 `call_api_with_debug` 调用接口，核对响应、日志与断点状态。",
+                "🛡️ 质量检查 → 使用 `get_practices_guide(guide_type='performance')`、`get_practices_guide(guide_type='security')` 以及 `get_common_pitfalls` 检查性能与安全风险。",
+                "🚀 上线发布 → 调用 `create_api_resource` 完成保存或复制，通过 `get_resource_tree`、`list_backups` 确认资源已同步。"
+            ],
+            "tool_hints": {
+                "结构规划": ["get_resource_tree", "search_api_endpoints", "get_development_workflow"],
+                "脚本设计": ["get_magic_script_syntax", "get_best_practices", "list_examples", "get_magic_api_docs"],
+                "校验": ["call_magic_api", "call_api_with_debug", "get_practices_guide", "get_common_pitfalls"],
+                "发布": ["create_api_resource", "copy_resource", "get_resource_tree", "list_backups"]
+            }
         },
         "diagnose": {
             "description": "故障排查流程",
+            "principles": [
+                "复现问题必须通过 MCP 工具采集请求与日志数据",
+                "排查过程中避免直接修改线上资源，必要时通过备份工具做好回滚保障"
+            ],
             "steps": [
-                "call：复现请求并采集日志",
-                "magic_api_debug_client.py：设置断点观察变量",
-                "api_detail：确认最新脚本内容",
-                "pitfalls：对照常见问题归因",
-                "performance：检查SQL和逻辑性能瓶颈",
-                "fix：修复问题并重新验证"
-            ]
+                "🎯 明确症状 → 使用 `call_magic_api` 或 `call_api_with_debug` 复现错误并记录返回体、日志与断点信息。",
+                "🔎 定位脚本 → 借助 `get_api_details_by_id`、`get_api_details_by_path`、`search_api_scripts`、`get_resource_tree` 找到问题脚本与版本。",
+                "🪲 深入调试 → 调用 `set_breakpoint`、`step_over_breakpoint`、`resume_breakpoint_execution`、`list_breakpoints` 检查关键变量与流程。",
+                "📚 对照知识库 → 使用 `get_practices_guide(guide_type='debugging')` 与 `get_common_pitfalls` 匹配常见错误模式。",
+                "🔁 修复验证 → 修复后重新执行 `call_magic_api` 或 `call_api_with_debug`，确认异常消失并检查副作用。",
+                "🧾 结果固化 → 通过 `create_full_backup` 或 `list_backups` 记录变更前后状态，并整理结论输出。"
+            ],
+            "tool_hints": {
+                "复现": ["call_magic_api", "call_api_with_debug"],
+                "定位": ["get_api_details_by_id", "get_api_details_by_path", "search_api_scripts", "get_resource_tree"],
+                "调试": ["set_breakpoint", "step_over_breakpoint", "resume_breakpoint_execution", "list_breakpoints"],
+                "知识库": ["get_practices_guide", "get_common_pitfalls"],
+                "收尾": ["create_full_backup", "list_backups", "call_magic_api"]
+            }
         },
         "optimize": {
             "description": "性能优化流程",
+            "principles": [
+                "优化前后都要通过工具记录基线与优化结果，便于量化收益",
+                "优先定位查询与脚本中的热点路径，避免大范围无效改动"
+            ],
             "steps": [
-                "profiling：开启SQL和接口执行时间统计",
-                "analyze：分析慢查询和热点路径",
-                "cache：添加适当缓存层",
-                "async：将耗时操作异步化",
-                "batch：合并多次数据库操作",
-                "test：性能测试验证优化效果"
-            ]
+                "📊 建立基线 → 使用 `call_magic_api` 收集响应数据，并通过 `get_practices_guide(guide_type='performance')` 明确指标。",
+                "🔎 瓶颈定位 → 借助 `search_api_scripts` 与 `get_api_details_by_path` 检查循环、慢查询及可疑脚本片段。",
+                "🧠 策略制定 → 参考 `get_best_practices`、`get_practices_guide(guide_type='performance', category='database')` 等建议制定优化方案。",
+                "🛠️ 实施优化 → 使用 `create_api_resource`、`copy_resource` 或 `move_resource` 调整资源，必要时结合 `call_api_with_debug` 验证 SQL。",
+                "🧪 效果验证 → 再次调用 `call_magic_api` 比对响应指标，并利用 `get_practices_guide(guide_type='performance')` 复盘剩余瓶颈。",
+                "📈 持续监控 → 通过 `list_backups`、`get_resource_tree` 记录优化快照，定期复测保证性能稳定。"
+            ],
+            "tool_hints": {
+                "基线": ["call_magic_api", "get_practices_guide"],
+                "分析": ["search_api_scripts", "get_api_details_by_path", "get_best_practices"],
+                "实施": ["create_api_resource", "copy_resource", "move_resource", "call_api_with_debug"],
+                "验证": ["call_magic_api", "get_practices_guide"],
+                "监控": ["list_backups", "get_resource_tree"]
+            }
         },
         "refactor": {
             "description": "代码重构流程",
+            "principles": [
+                "重构范围需通过工具锁定受影响脚本，保证变更可控",
+                "重构后必须依靠调用和备份工具验证行为未发生回归"
+            ],
             "steps": [
-                "identify：识别代码异味和重复逻辑",
-                "extract：提取公共函数和模块",
-                "simplify：简化复杂条件和嵌套",
-                "document：完善注释和文档",
-                "test：确保重构后功能一致",
-                "review：代码审查确保质量"
-            ]
+                "🧭 范围识别 → 使用 `search_api_scripts`、`get_api_details_by_path`、`get_resource_tree` 确定重复逻辑与依赖。",
+                "🧱 模块抽取 → 参考 `list_examples` 与 `get_best_practices` 设计公共模块或脚本结构。",
+                "⚙️ 实施变更 → 借助 `create_api_resource`、`copy_resource`、`move_resource` 分步调整资源结构。",
+                "🧪 行为校验 → 使用 `call_magic_api`、`call_api_with_debug`、`set_breakpoint` 确认核心路径无回归。",
+                "🧰 文档同步 → 通过 `get_development_workflow`、`get_magic_api_docs` 更新说明，必要时生成示例。",
+                "🧾 变更固化 → 借助 `create_full_backup` 或 `list_backups` 留存版本，便于审计与回滚。"
+            ],
+            "tool_hints": {
+                "识别": ["search_api_scripts", "get_api_details_by_path", "get_resource_tree"],
+                "设计": ["list_examples", "get_best_practices", "get_development_workflow"],
+                "实施": ["create_api_resource", "copy_resource", "move_resource"],
+                "验证": ["call_magic_api", "call_api_with_debug", "set_breakpoint"],
+                "归档": ["create_full_backup", "list_backups"]
+            }
         }
     },
     "performance_tips": {
