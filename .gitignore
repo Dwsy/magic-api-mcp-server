@@ -143,3 +143,8 @@ final_output/
 
 # Local config
 .local/
+
+# Files to be ignored permanently
+genmagicscript.md
+test/test_mcp_tools.py
+test_mcp_tools.py
