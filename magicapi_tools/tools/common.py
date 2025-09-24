@@ -31,27 +31,84 @@ from magicapi_tools.utils import error_response
 
 
 def path_to_id_impl(http_client: MagicAPIHTTPClient, path: str, fuzzy: bool = True) -> Dict[str, Any]:
-    """根据路径查找资源 ID。"""
-    ok, payload = http_client.resource_tree()
-    if not ok:
-        return error_response(payload.get("code"), payload.get("message", "无法获取资源树"), payload.get("detail"))
+    """根据路径查找资源 ID，支持全路径搜索。"""
+    try:
+        # 使用与 search_endpoints 相同的逻辑获取完整路径信息
+        from magicapi_tools.utils.extractor import load_resource_tree
+        from magicapi_tools.tools.query import _collect_all_endpoints
 
-    nodes = _flatten_tree(payload, ["api"])
-    normalized = path if path.startswith("/") else f"/{path}"
-    target_lower = normalized.lower()
-    matches: List[Dict[str, Any]] = []
+        tree = load_resource_tree(client=http_client)
+        all_endpoint_details = []
+        for child in tree.api_nodes:
+            _collect_all_endpoints(child, "", all_endpoint_details)
 
-    for node in nodes:
-        node_path = (node.get("path") or "").lower()
-        if not node_path:
-            continue
-        if (fuzzy and target_lower in node_path) or (not fuzzy and node_path == target_lower):
-            matches.append(node)
+        # 标准化输入路径
+        normalized = path if path.startswith("/") else f"/{path}"
+        target_lower = normalized.lower()
+        matches: List[Dict[str, Any]] = []
 
-    if not matches:
-        return error_response("not_found", f"未在资源树中找到路径 {path}")
+        for detail in all_endpoint_details:
+            detail_path = detail.get("path", "")
+            detail_id = detail.get("id")
+            detail_method = detail.get("method", "")
+            detail_name = detail.get("name", "")
 
-    return {"path": path, "normalized_path": normalized, "matches": matches}
+            if not detail_path or not detail_id:
+                continue
+
+            # 同时检查完整路径和部分路径
+            detail_path_lower = detail_path.lower()
+            node_path_lower = (detail.get("path") or "").lower()  # 兼容旧逻辑
+
+            # 检查是否匹配
+            path_matches = False
+            if fuzzy:
+                # 模糊匹配：目标路径包含在完整路径中，或者完整路径包含在目标路径中
+                path_matches = (target_lower in detail_path_lower or
+                               detail_path_lower in target_lower)
+            else:
+                # 精确匹配
+                path_matches = detail_path_lower == target_lower
+
+            if path_matches:
+                # 构建匹配结果，包含完整信息
+                match = {
+                    "id": detail_id,
+                    "path": detail_path,  # 完整路径
+                    "method": detail_method,
+                    "name": detail_name,
+                    "groupId": detail.get("groupId"),
+                    "type": "api"
+                }
+                matches.append(match)
+
+        if not matches:
+            return error_response("not_found", f"未在资源树中找到路径 {path}")
+
+        return {"path": path, "normalized_path": normalized, "matches": matches}
+
+    except Exception as exc:
+        # 如果新逻辑失败，回退到旧逻辑
+        ok, payload = http_client.resource_tree()
+        if not ok:
+            return error_response(payload.get("code"), payload.get("message", "无法获取资源树"), payload.get("detail"))
+
+        nodes = _flatten_tree(payload, ["api"])
+        normalized = path if path.startswith("/") else f"/{path}"
+        target_lower = normalized.lower()
+        matches: List[Dict[str, Any]] = []
+
+        for node in nodes:
+            node_path = (node.get("path") or "").lower()
+            if not node_path:
+                continue
+            if (fuzzy and target_lower in node_path) or (not fuzzy and node_path == target_lower):
+                matches.append(node)
+
+        if not matches:
+            return error_response("not_found", f"未在资源树中找到路径 {path}")
+
+        return {"path": path, "normalized_path": normalized, "matches": matches}
 
 
 def find_api_ids_by_path_impl(http_client: MagicAPIHTTPClient, path: str, limit: int = 10) -> Dict[str, Any]:
