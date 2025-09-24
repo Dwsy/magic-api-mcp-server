@@ -32,6 +32,7 @@ class SystemTools:
             description="获取Magic-API助手元信息，包括版本、功能列表和配置。",
             tags={"meta", "info", "system"},
             meta={"version": "2.2", "category": "system"},
+            enabled=False,
         )
         def meta() -> Dict[str, Any]:
             return {
