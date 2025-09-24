@@ -106,6 +106,28 @@ uv add fastmcp
 }
 ```
 
+**工具组合使用场景**：
+
+| 场景 | 组合模式 | 适用环境 | 特点 |
+|------|----------|----------|------|
+| **新手学习** | `documentation_only` | 学习阶段 | 专注文档查询和语法学习 |
+| **API开发** | `development` | 开发环境 | 接口开发、测试和调试 |
+| **生产运维** | `production` | 生产环境 | 系统运维和资源管理 |
+| **问题调试** | `minimal` | 调试场景 | 问题排查，启用DEBUG日志 |
+
+**基础配置模板**：
+```json
+{
+  "mcpServers": {
+    "magic-api-server": {
+      "command": "uvx",
+      "args": ["magic-api-mcp-server@latest", "--composition", "{组合模式}", "--transport", "stdio"],
+      "timeout": 600
+    }
+  }
+}
+```
+
 ### 3. 本项目 MCP 工具功能
 
 Magic-API MCP 服务器为 Magic-API 开发提供以下专业工具：
@@ -429,68 +451,7 @@ magicapi_tools/
     └── resource_manager.py # 资源管理器
 ```
 
-### 9. 使用场景
-
-#### 场景 1: 新手学习 Magic-API
-使用 `documentation_only` 组合，专注于学习和文档查询：
-```json
-{
-  "mcpServers": {
-    "magic-api-docs": {
-      "command": "uvx",
-      "args": ["magic-api-mcp-server@latest", "--composition", "documentation_only", "--transport", "stdio"],
-      "timeout": 600
-    }
-  }
-}
-```
-
-#### 场景 2: API 开发和测试
-使用 `api_only` 或 `query` 组合，进行接口开发和测试：
-```json
-{
-  "mcpServers": {
-    "magic-api-dev": {
-      "command": "uvx",
-      "args": ["magic-api-mcp-server@latest", "--composition", "development", "--transport", "stdio"],
-      "timeout": 600
-    }
-  }
-}
-```
-
-#### 场景 3: 生产环境运维
-使用 `backup_only` 或 `resource_management` 组合，进行系统运维：
-```json
-{
-  "mcpServers": {
-    "magic-api-ops": {
-      "command": "uvx",
-      "args": ["magic-api-mcp-server@latest", "--composition", "production", "--transport", "stdio"],
-      "timeout": 600
-    }
-  }
-}
-```
-
-#### 场景 4: 问题排查和调试
-使用 `debug` 组合，进行问题排查和调试：
-```json
-{
-  "mcpServers": {
-    "magic-api-debug": {
-      "command": "uvx",
-      "args": ["magic-api-mcp-server@latest", "--composition", "minimal", "--transport", "stdio"],
-      "timeout": 600,
-      "env": {
-        "LOG_LEVEL": "DEBUG"
-      }
-    }
-  }
-}
-```
-
-### 10. 安装方式
+### 9. 安装方式
 
 #### 从 PyPI 安装（推荐）
 
@@ -551,15 +512,7 @@ magicapi_tools/
     └── resource_manager.py  # 资源管理器
 ```
 
-## 🎯 使用场景
-
-### 场景 1: 获取 API 详细信息
-使用 `get_examples` 工具获取 Magic-API 脚本语法示例和最佳实践。
-
-### 场景 2: API 测试
-使用 `call_api` 工具测试 Magic-API 接口。
-
-### 11. MCP 提示词
+### 10. MCP 提示词
 
 #### 提示词概述
 
