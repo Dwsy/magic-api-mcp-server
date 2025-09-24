@@ -25,7 +25,7 @@ uv add fastmcp
   "mcpServers": {
     "magic-api-mcp-server": {
       "command": "uvx",
-      "args": ["magic-api-mcp-server", "--transport", "stdio"],
+      "args": ["magic-api-mcp-server@latest", "--transport", "stdio"],
       "timeout": 600
     }
   }
@@ -39,7 +39,7 @@ uv add fastmcp
   "mcpServers": {
     "magic-api-mcp-server": {
       "command": "uvx",
-      "args": ["magic-api-mcp-server", "--transport", "stdio"],
+      "args": ["magic-api-mcp-server@latest", "--transport", "stdio"],
       "timeout": 600,
       "env": {
         "MAGIC_API_BASE_URL": "http://127.0.0.1:10712",
@@ -59,47 +59,47 @@ uv add fastmcp
   "mcpServers": {
     "magic-api-mcp-server-full": {
       "command": "uvx",
-      "args": ["magic-api-mcp-server", "--composition", "full", "--transport", "stdio"],
+      "args": ["magic-api-mcp-server@latest", "--composition", "full", "--transport", "stdio"],
       "timeout": 600
     },
     "magic-api-mcp-server-minimal": {
       "command": "uvx",
-      "args": ["magic-api-mcp-server", "--composition", "minimal", "--transport", "stdio"],
+      "args": ["magic-api-mcp-server@latest", "--composition", "minimal", "--transport", "stdio"],
       "timeout": 600
     },
     "magic-api-mcp-server-development": {
       "command": "uvx",
-      "args": ["magic-api-mcp-server", "--composition", "development", "--transport", "stdio"],
+      "args": ["magic-api-mcp-server@latest", "--composition", "development", "--transport", "stdio"],
       "timeout": 600
     },
     "magic-api-mcp-server-production": {
       "command": "uvx",
-      "args": ["magic-api-mcp-server", "--composition", "production", "--transport", "stdio"],
+      "args": ["magic-api-mcp-server@latest", "--composition", "production", "--transport", "stdio"],
       "timeout": 600
     },
     "magic-api-mcp-server-documentation-only": {
       "command": "uvx",
-      "args": ["magic-api-mcp-server", "--composition", "documentation_only", "--transport", "stdio"],
+      "args": ["magic-api-mcp-server@latest", "--composition", "documentation_only", "--transport", "stdio"],
       "timeout": 600
     },
     "magic-api-mcp-server-api-only": {
       "command": "uvx",
-      "args": ["magic-api-mcp-server", "--composition", "api_only", "--transport", "stdio"],
+      "args": ["magic-api-mcp-server@latest", "--composition", "api_only", "--transport", "stdio"],
       "timeout": 600
     },
     "magic-api-mcp-server-backup-only": {
       "command": "uvx",
-      "args": ["magic-api-mcp-server", "--composition", "backup_only", "--transport", "stdio"],
+      "args": ["magic-api-mcp-server@latest", "--composition", "backup_only", "--transport", "stdio"],
       "timeout": 600
     },
     "magic-api-mcp-server-class-method-only": {
       "command": "uvx",
-      "args": ["magic-api-mcp-server", "--composition", "class_method_only", "--transport", "stdio"],
+      "args": ["magic-api-mcp-server@latest", "--composition", "class_method_only", "--transport", "stdio"],
       "timeout": 600
     },
     "magic-api-mcp-server-search-only": {
       "command": "uvx",
-      "args": ["magic-api-mcp-server", "--composition", "search_only", "--transport", "stdio"],
+      "args": ["magic-api-mcp-server@latest", "--composition", "search_only", "--transport", "stdio"],
       "timeout": 600
     }
   }
@@ -228,17 +228,20 @@ Java类和方法检索工具
 ### 6. 本地运行方式
 
 ```bash
-# 推荐方式：使用 uvx 运行（适用于已发布到 pip 的包）
-uvx magic-api-mcp-server
+# 推荐方式：使用 uvx 运行最新版本（适用于已发布到 pip 的包）
+uvx magic-api-mcp-server@latest
+
+# 或使用安装后的命令运行最新版本
+magic-api-mcp-server
 
 # 或者直接运行 Python 脚本（开发时）
 python run_mcp.py
 
 # 指定工具组合运行
-uvx magic-api-mcp-server --composition development
+uvx magic-api-mcp-server@latest --composition development
 
 # 使用特定配置运行
-MAGIC_API_BASE_URL=http://localhost:8080 uvx magic-api-mcp-server
+MAGIC_API_BASE_URL=http://localhost:8080 uvx magic-api-mcp-server@latest
 ```
 
 ### 7. Docker 运行方式
@@ -276,13 +279,13 @@ docker build -t magic-api-mcp-server .
 
 # 2. 运行容器 (stdio模式)
 docker run --rm --entrypoint uvx magic-api-mcp-server \
-  magic-api-mcp-server --composition full --transport stdio
+  magic-api-mcp-server@latest --composition full --transport stdio
 
 # 3. 运行容器 (HTTP模式)
 docker run -d --name magic-api-mcp-server \
   -p 8000:8000 \
   --entrypoint uvx magic-api-mcp-server \
-  magic-api-mcp-server --transport http --port 8000
+  magic-api-mcp-server@latest --transport http --port 8000
 
 # 4. 查看日志
 docker logs -f magic-api-mcp-server
@@ -428,7 +431,7 @@ magicapi_tools/
   "mcpServers": {
     "magic-api-docs": {
       "command": "uvx",
-      "args": ["magic-api-mcp-server", "--composition", "documentation_only", "--transport", "stdio"],
+      "args": ["magic-api-mcp-server@latest", "--composition", "documentation_only", "--transport", "stdio"],
       "timeout": 600
     }
   }
@@ -442,7 +445,7 @@ magicapi_tools/
   "mcpServers": {
     "magic-api-dev": {
       "command": "uvx",
-      "args": ["magic-api-mcp-server", "--composition", "development", "--transport", "stdio"],
+      "args": ["magic-api-mcp-server@latest", "--composition", "development", "--transport", "stdio"],
       "timeout": 600
     }
   }
@@ -456,7 +459,7 @@ magicapi_tools/
   "mcpServers": {
     "magic-api-ops": {
       "command": "uvx",
-      "args": ["magic-api-mcp-server", "--composition", "production", "--transport", "stdio"],
+      "args": ["magic-api-mcp-server@latest", "--composition", "production", "--transport", "stdio"],
       "timeout": 600
     }
   }
@@ -470,7 +473,7 @@ magicapi_tools/
   "mcpServers": {
     "magic-api-debug": {
       "command": "uvx",
-      "args": ["magic-api-mcp-server", "--composition", "minimal", "--transport", "stdio"],
+      "args": ["magic-api-mcp-server@latest", "--composition", "minimal", "--transport", "stdio"],
       "timeout": 600,
       "env": {
         "LOG_LEVEL": "DEBUG"
@@ -491,8 +494,11 @@ pip install magic-api-mcp-server
 # 或使用 uv 安装
 uv add magic-api-mcp-server
 
-# 运行 MCP 服务器
-uvx magic-api-mcp-server
+# 运行 MCP 服务器（推荐使用最新版本）
+uvx magic-api-mcp-server@latest
+
+# 或使用安装后的命令
+magic-api-mcp-server
 ```
 
 #### 开发者本地安装
@@ -664,7 +670,7 @@ magicapi_tools/
   "mcpServers": {
     "magic-api-mcp-server": {
       "command": "uvx",
-      "args": ["magic-api-mcp-server", "--transport", "stdio"],
+      "args": ["magic-api-mcp-server@latest", "--transport", "stdio"],
       "timeout": 600,
       "env": {
         "MAGIC_API_BASE_URL": "http://127.0.0.1:10712",
