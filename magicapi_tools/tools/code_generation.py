@@ -263,8 +263,8 @@ class CodeGenerationTools:
         if enable_pagination:
             pagination_code = f"""
                     var total = db.selectInt("SELECT COUNT(*) FROM {table_name}");
-                    var page = params.page ?: 1;
-                    var size = params.size ?: 10;
+                    var page = params.page ? params.page : 1;
+                    var size = params.size ? params.size : 10;
                     var offset = (page - 1) * size;"""
 
         # 生成各个API的代码
@@ -276,8 +276,8 @@ class CodeGenerationTools:
                 import response;
 
                 var total = db.selectInt("SELECT COUNT(*) FROM {table_name}");
-                var page = params.page ?: 1;
-                var size = params.size ?: 10;
+                var page = params.page ? params.page : 1;
+                var size = params.size ? params.size : 10;
                 var offset = (page - 1) * size;
                 var sql = "SELECT {select_fields} FROM {table_name} ORDER BY create_time DESC LIMIT #{{offset}}, #{{size}}";
 
@@ -421,8 +421,8 @@ class CodeGenerationTools:
         if operation_type == "select":
             if include_pagination:
                 code_lines.extend([
-                    "var page = params.page ?: 1;",
-                    "var size = params.size ?: 10;",
+                    "var page = params.page ? params.page : 1;",
+                    "var size = params.size ? params.size : 10;",
                     "var offset = (page - 1) * size;",
                     "",
                     "var total = db.selectInt(`SELECT COUNT(*) FROM {table_name}`);",
@@ -720,6 +720,6 @@ class CodeGenerationTools:
                 code_lines.append("});")
                 code_lines.append("")
 
-        code_lines.append("return mapped ?: filtered ?: grouped ?: sorted ?: data;")
+        code_lines.append("return mapped ? mapped : (filtered ? filtered : (grouped ? grouped : (sorted ? sorted : data)));")
 
         return "\n".join(code_lines)

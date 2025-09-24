@@ -185,18 +185,8 @@ class QueryTools:
             full_path = _get_full_path_by_api_details(context.http_client, file_id, method, path, name)
 
             return {
-                "id": file_id,
-                "name": name,
-                "path": path,
-                "method": method,
-                "full_path": full_path,  # 完整的路径，包含分组路径，如 "/db/advance/other/number/convert"
-                "groupId": payload.get("groupId"),
-                "script": payload.get("script"),
-                "options": payload.get("options"),
-                "description": payload.get("comment"),
-                "updatedAt": payload.get("updateTime"),
-                "createdAt": payload.get("createTime"),
-                "meta_raw": payload,
+                **payload,
+                "full_path": full_path  # 完整的路径，包含分组路径，如 "/db/advance/other/number/convert"
             }
 
 

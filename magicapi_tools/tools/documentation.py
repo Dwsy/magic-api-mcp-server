@@ -60,6 +60,22 @@ from magicapi_tools.utils.knowledge_base import (
     get_redis_plugin_examples,
     get_advanced_operations_examples,
 )
+from magicapi_tools.utils.kb_syntax import get_full_syntax_rules as get_full_syntax_from_kb
+
+def get_full_syntax_rules(locale: str = "zh-CN") -> Dict[str, Any]:
+    """获取完整的Magic-Script语法规则。
+
+    从kb_syntax.py中获取配置化的语法规则，
+    这是专门为大模型编写代码前强制获取的完整语法规则。
+
+    Args:
+        locale: 语言设置，默认为zh-CN
+
+    Returns:
+        包含完整语法规则的字典
+    """
+    return get_full_syntax_from_kb(locale)
+
 from magicapi_tools.utils.kb_modules import MODULES_KNOWLEDGE
 from magicapi_tools.utils import error_response
 
@@ -88,20 +104,54 @@ class DocumentationTools:
         def syntax(
             topic: Annotated[
                 str,
-                Field(description="要查询的语法主题，如'variables'、'loops'、'functions'等", min_length=1)
+                Field(description="要查询的语法主题，如'variables'、'loops'、'functions'等；使用'full'获取完整语法规则", min_length=1)
             ],
             locale: Annotated[
                 Literal["zh-CN", "en-US"],
                 Field(description="文档语言选择", default="zh-CN")
             ] = "zh-CN"
         ) -> Dict[str, Any]:
+            # 强制返回全量语法规则的特殊处理
+            if topic.lower() == "full":
+                return get_full_syntax_rules(locale)
+
             data = get_syntax(topic)
             if not data:
                 available_topics = ", ".join(MAGIC_SCRIPT_SYNTAX.keys())
-                return error_response("not_found", f"未找到主题 '{topic}' 的语法信息。可用主题：{available_topics}")
+                return error_response("not_found", f"未找到主题 '{topic}' 的语法信息。可用主题：{available_topics}, full(完整语法)")
             result = {"topic": topic, "locale": locale}
             result.update(data)
             return result
+
+        @mcp_app.tool(
+            name="get_full_magic_script_syntax",
+            description="强制获取完整的Magic-Script语法规则 - 大模型编写代码前必须调用此工具以确保语法准确性",
+            tags={"syntax", "documentation", "scripting", "language", "mandatory", "full-rules"},
+            meta={"version": "2.1", "category": "syntax", "author": "system", "mandatory": True},
+            annotations={
+                "title": "强制完整语法规则获取",
+                "readOnlyHint": True,
+                "openWorldHint": False,
+                "mandatory": True,
+                "description": "大模型编写任何Magic-Script代码前必须先调用此工具获取完整语法规则"
+            }
+        )
+        def get_full_syntax(locale: Annotated[
+            Literal["zh-CN", "en-US"],
+            Field(description="文档语言选择", default="zh-CN")
+        ] = "zh-CN") -> Dict[str, Any]:
+            """强制获取完整的Magic-Script语法规则。
+
+            ⚠️ 重要：大模型在编写任何Magic-Script代码前必须调用此工具获取完整语法规则。
+            Magic-Script是一种小众语言，语法规则独特，必须确保准确理解后再编写代码。
+
+            Args:
+                locale: 语言设置，默认为zh-CN
+
+            Returns:
+                包含完整语法规则的字典
+            """
+            return get_full_syntax_rules(locale)
 
         @mcp_app.tool(
             name="get_magic_script_examples",
@@ -201,8 +251,8 @@ class DocumentationTools:
         def workflow(
             task: Annotated[
                 str,
-                Field(description="工作流任务类型，如'create_api'、'setup_database'、'deploy_app'等", min_length=1)
-            ] = "create_api",
+                Field(description="工作流任务类型，如'api_script_development'、'setup_database'、'deploy_app'等", min_length=1)
+            ] = "api_script_development",
             with_commands: Annotated[
                 bool,
                 Field(description="是否包含具体的命令示例，true时返回可执行的命令，false时只返回步骤描述", default=True)
@@ -213,6 +263,56 @@ class DocumentationTools:
                 "task": task,
                 "description": flow.get("description"),
                 "steps": flow.get("steps", []),
+                "core_workflow_overview": {
+                    "summary": "MagicAPI MCP Agent 核心工作流：需求洞察 → 语法对齐 → 资源定位 → 实现调试 → 结果反馈",
+                    "stages": [
+                        {
+                            "stage": "需求洞察",
+                            "recommended_tools": [
+                                "documentation.search_knowledge",
+                                "documentation.get_development_workflow",
+                                "documentation.get_best_practices"
+                            ],
+                            "goal": "明确业务目标、限制条件，以及适用的标准流程"
+                        },
+                        {
+                            "stage": "语法对齐",
+                            "recommended_tools": [
+                                "documentation.get_full_magic_script_syntax",
+                                "documentation.get_script_syntax"
+                            ],
+                            "goal": "确保Magic-Script语法与特性被准确掌握，避免JS思维误差"
+                        },
+                        {
+                            "stage": "资源定位",
+                            "recommended_tools": [
+                                "resource_management.get_resource_tree",
+                                "query.get_api_details_by_path",
+                                "query.search_api_endpoints"
+                            ],
+                            "goal": "查找现有接口与脚本，确认依赖与影响范围"
+                        },
+                        {
+                            "stage": "实现与调试",
+                            "recommended_tools": [
+                                 "resource_management.save_api_endpoint",
+                                "api.call_magic_api",
+                                "debug.call_api_with_debug",
+                                "debug.set_breakpoint"
+                            ],
+                            "goal": "完成脚本编写/修改，并通过断点、调试调用确保行为正确"
+                        },
+                        {
+                            "stage": "结果反馈",
+                            "recommended_tools": [
+                                "documentation.get_practices_guide",
+                                "documentation.get_common_pitfalls",
+                                "backup.list_backups"
+                            ],
+                            "goal": "输出可溯源的结论，总结风险与回滚保障"
+                        }
+                    ]
+                }
             }
             if with_commands:
                 response["commands"] = [
