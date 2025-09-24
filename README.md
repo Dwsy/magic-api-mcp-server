@@ -76,6 +76,28 @@ uv add fastmcp
 }
 ```
 
+**工具组合使用场景**：
+
+| 场景 | 组合模式 | 适用环境 | 特点 |
+|------|----------|----------|------|
+| **新手学习** | `documentation_only` | 学习阶段 | 专注文档查询和语法学习 |
+| **API开发** | `development` | 开发环境 | 接口开发、测试和调试 |
+| **生产运维** | `production` | 生产环境 | 系统运维和资源管理 |
+| **问题调试** | `minimal` | 调试场景 | 问题排查，启用DEBUG日志 |
+
+**基础配置模板**：
+```json
+{
+  "mcpServers": {
+    "magic-api-server": {
+      "command": "uvx",
+      "args": ["magic-api-mcp-server@latest", "--composition", "{组合模式}", "--transport", "stdio"],
+      "timeout": 600
+    }
+  }
+}
+```
+
 ### 3. 本项目 MCP 工具功能
 
 Magic-API MCP 服务器为 Magic-API 开发提供以下专业工具：
