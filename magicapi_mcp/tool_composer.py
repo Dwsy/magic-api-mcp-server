@@ -165,7 +165,7 @@ class ToolComposer:
             "class_method": ClassMethodTools(),
             "search": SearchTools(),
             "debug": DebugTools(),
-            "code_generation": CodeGenerationTools(),
+            # "code_generation": CodeGenerationTools(),
             "system": SystemTools(),
         }
 
