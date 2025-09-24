@@ -1,5 +1,5 @@
 def main():
-    print("Hello from magic-api-tools!")
+    print("Hello from magic-api-mcp-server!")
 
 
 if __name__ == "__main__":
