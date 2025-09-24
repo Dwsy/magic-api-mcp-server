@@ -7,8 +7,13 @@
 ### 1. 安装与测试
 
 ```bash
-# 如果尚未安装 uv
+# 如果尚未安装 uv (推荐方式)
 pip install uv
+
+# 安装项目依赖
+uv sync
+# 或者安装 fastmcp
+uv add fastmcp
 ```
 
 ### 2. MCP 配置
@@ -19,10 +24,9 @@ pip install uv
 {
   "mcpServers": {
     "magic-api-mcp": {
-      "command": "python",
-      "args": ["-m", "uv", "run", "fastmcp", "run", "magicapi_mcp/magicapi_assistant.py:tools", "--transport", "stdio"],
-      "timeout": 600,
-      "autoApprove": ["interactive_feedback"]
+      "command": "uv",
+      "args": ["run", "fastmcp", "run", "run_mcp.py:mcp", "--transport", "stdio"],
+      "timeout": 600
     }
   }
 }
@@ -34,37 +38,39 @@ pip install uv
 {
   "mcpServers": {
     "magic-api-mcp": {
-      "command": "python",
-      "args": ["-m", "uv", "run", "fastmcp", "run", "magicapi_mcp/magicapi_assistant.py:tools", "--transport", "stdio"],
+      "command": "uv",
+      "args": ["run", "fastmcp", "run", "run_mcp.py:mcp", "--transport", "stdio"],
       "timeout": 600,
       "env": {
-        "MCP_DEBUG": "false",
-        "MCP_WEB_HOST": "127.0.0.1",
-        "MCP_WEB_PORT": "8765",
-        "MCP_LANGUAGE": "zh-CN"
-      },
-      "autoApprove": ["interactive_feedback"]
+        "MAGIC_API_BASE_URL": "http://127.0.0.1:10712",
+        "MAGIC_API_WS_URL": "ws://127.0.0.1:10712/magic/web/console",
+        "MAGIC_API_TIMEOUT_SECONDS": "30.0",
+        "LOG_LEVEL": "INFO"
+      }
     }
   }
 }
 ```
 
-#### 桌面应用程序配置（v2.5.0 新功能 - 使用原生桌面应用程序）：
+#### 使用不同工具组合的配置：
 
 ```json
 {
   "mcpServers": {
-    "magic-api-mcp": {
+    "magic-api-mcp-full": {
+      "command": "uv",
+      "args": ["run", "fastmcp", "run", "run_mcp.py:mcp", "--transport", "stdio"],
+      "timeout": 600
+    },
+    "magic-api-mcp-minimal": {
       "command": "python",
-      "args": ["-m", "uv", "run", "fastmcp", "run", "magicapi_mcp/magicapi_assistant.py:tools", "--transport", "stdio"],
-      "timeout": 600,
-      "env": {
-        "MCP_DESKTOP_MODE": "true",
-        "MCP_WEB_HOST": "127.0.0.1",
-        "MCP_WEB_PORT": "8765",
-        "MCP_DEBUG": "false"
-      },
-      "autoApprove": ["interactive_feedback"]
+      "args": ["-c", "from magicapi_mcp.magicapi_assistant import create_app; create_app('minimal').run(transport='stdio')"],
+      "timeout": 600
+    },
+    "magic-api-mcp-documentation-only": {
+      "command": "python",
+      "args": ["-c", "from magicapi_mcp.magicapi_assistant import create_app; create_app('documentation_only').run(transport='stdio')"],
+      "timeout": 600
     }
   }
 }
@@ -74,7 +80,7 @@ pip install uv
 
 Magic-API MCP 服务器为 Magic-API 开发提供以下专业工具：
 
-#### 3.1 文档工具
+#### 3.1 文档工具 (DocumentationTools)
 - 获取 Magic-API 脚本语法示例
 - 获取内置模块文档
 - 获取内置函数文档
@@ -83,89 +89,104 @@ Magic-API MCP 服务器为 Magic-API 开发提供以下专业工具：
 - 获取插件系统信息
 - 获取最佳实践指南
 
-#### 3.2 代码生成工具
-- 生成 Magic-API 脚本代码
-- 生成 MyBatis SQL 语句
-- 生成 Java 代码片段
-- 生成 API 端点示例
+#### 3.2 API 工具 (ApiTools)
+- 执行 Magic-API HTTP 请求
+- 调用 Magic-API 端点
+- 测试 API 接口功能
+- 获取 API 响应数据
 
-#### 3.3 API 管理工具
-- 查询 API 端点信息
+#### 3.3 查询工具 (QueryTools)
+- 查询 API 资源信息
+- 搜索和过滤 API 端点
+- 获取接口详细信息
+- 参数分析和验证
+
+#### 3.4 资源管理工具 (ResourceManagementTools)
 - 管理 Magic-API 资源
-- 调试 API 接口
+- 创建、更新、删除 API 接口
+- 分组管理
+- 资源导入导出
+
+#### 3.5 搜索工具 (SearchTools)
 - 搜索 API 端点
+- 按名称、路径、方法等条件搜索
+- 高级搜索和过滤功能
 
-#### 3.4 系统工具
-- 备份与恢复功能
-- 系统状态查询
-- 资源管理器
-- 搜索与过滤功能
+#### 3.6 调试工具 (DebugTools)
+- 断点调试功能
+- 变量检查
+- 执行流程控制
 
-### 4. Prompt Engineering 设置
+#### 3.7 备份工具 (BackupTools)
+- 配置备份与恢复
+- 资源备份管理
 
-为获得最佳结果，请在 AI 助手中添加以下规则：
+#### 3.8 类方法工具 (ClassMethodTools)
+- 查询 Java 类和方法
+- 获取类方法详细信息
+- 参数和返回值分析
 
-```
-# Magic-API MCP 交互反馈规则
+#### 3.9 系统工具 (SystemTools)
+- 系统信息查询
+- 工具状态检查
+- 配置验证
 
-1. 遵循 magic-api-mcp 指令
-2. 使用项目中的工具获取最新、最准确的信息
-3. 优先使用 extract_api_paths.py 从数据库获取实际代码
-4. 参考项目架构和现有实现模式
-5. 遵循项目编码规范和最佳实践
-```
+### 4. 工具组合配置
+
+本项目支持多种工具组合，可根据需要选择：
+
+- `full`: 完整工具集 - 适用于完整开发环境
+- `minimal`: 最小工具集 - 适用于资源受限环境
+- `development`: 开发工具集 - 专注于开发调试
+- `production`: 生产工具集 - 生产环境稳定运行
+- `documentation_only`: 仅文档工具 - 文档查询和学习
+- `api_only`: 仅API工具 - 接口测试和调用
+- `backup_only`: 仅备份工具 - 数据备份和管理
+- `class_method_only`: 仅类方法工具 - Java类和方法查询
+- `search_only`: 仅搜索工具 - 快速搜索定位
 
 ### 5. 环境变量
 
 | 变量 | 用途 | 值 | 默认值 |
 |------|------|----|--------|
-| MCP_DEBUG | 调试模式 | true/false | false |
-| MCP_WEB_HOST | Web UI 主机绑定 | IP 地址或主机名 | 127.0.0.1 |
-| MCP_WEB_PORT | Web UI 端口 | 1024-65535 | 8765 |
-| MCP_DESKTOP_MODE | 桌面应用程序模式 | true/false | false |
-| MCP_LANGUAGE | 强制 UI 语言 | zh-TW/zh-CN/en | 自动检测 |
+| MAGIC_API_BASE_URL | Magic-API 服务基础 URL | URL 地址 | http://127.0.0.1:10712 |
+| MAGIC_API_WS_URL | Magic-API WebSocket URL | WebSocket 地址 | ws://127.0.0.1:10712/magic/web/console |
+| MAGIC_API_USERNAME | Magic-API 认证用户名 | 字符串 | 无 |
+| MAGIC_API_PASSWORD | Magic-API 认证密码 | 字符串 | 无 |
+| MAGIC_API_TOKEN | Magic-API 认证令牌 | 字符串 | 无 |
+| MAGIC_API_AUTH_ENABLED | 是否启用认证 | true/false | false |
+| MAGIC_API_TIMEOUT_SECONDS | 请求超时时间（秒） | 数字 | 30.0 |
+| LOG_LEVEL | 日志级别 | DEBUG/INFO/WARNING/ERROR | INFO |
+| FASTMCP_TRANSPORT | FastMCP 传输协议 | stdio/http | stdio |
 
-#### MCP_WEB_HOST 说明：
-- `127.0.0.1`（默认）：仅本地访问，更高安全性
-- `0.0.0.0`：允许远程访问，适用于 SSH 远程开发环境
-
-#### MCP_LANGUAGE 说明：
-用于强制界面语言，覆盖自动系统检测。
-支持的语言代码：
-- `zh-TW`：繁体中文
-- `zh-CN`：简体中文
-- `en`：英语
-
-语言检测优先级：
-1. 界面中用户保存的语言设置（最高优先级）
-2. MCP_LANGUAGE 环境变量
-3. 系统环境变量（LANG, LC_ALL 等）
-4. 系统默认语言
-5. 回退到默认语言（简体中文）
-
-### 6. 测试选项
+### 6. 本地运行方式
 
 ```bash
-# 版本检查
-python -m uv run fastmcp run magicapi_mcp/magicapi_assistant.py:tools --help
+# 推荐方式：使用 uv 运行
+uv run fastmcp run run_mcp.py:mcp
 
-# 启动 MCP 服务
-python -m uv run fastmcp run magicapi_mcp/magicapi_assistant.py:tools --transport stdio
+# 或者直接运行 Python 脚本
+python run_mcp.py
 
-# 调试模式
-MCP_DEBUG=true python -m uv run fastmcp run magicapi_mcp/magicapi_assistant.py:tools --transport stdio
+# 指定工具组合运行
+python -c "from magicapi_mcp.magicapi_assistant import create_app; create_app('development').run(transport='stdio')"
 
-# 指定语言测试
-MCP_LANGUAGE=en python -m uv run fastmcp run magicapi_mcp/magicapi_assistant.py:tools --transport stdio  # 强制英文界面
-MCP_LANGUAGE=zh-CN python -m uv run fastmcp run magicapi_mcp/magicapi_assistant.py:tools --transport stdio  # 强制简体中文
+# 使用特定配置运行
+MAGIC_API_BASE_URL=http://localhost:8080 uv run fastmcp run run_mcp.py:mcp
 ```
 
 ### 7. 开发者安装
 
 ```bash
 # 本项目已包含完整的 MCP 实现
-cd /path/to/magic-api-tools
+cd magic-api-tools
 pip install -r requirements.txt
+
+# 或使用 uv (推荐)
+uv sync
+
+# 安装 fastmcp 依赖
+uv add fastmcp
 ```
 
 ## 🛠️ 项目结构
@@ -180,13 +201,19 @@ magicapi_tools/
 ├── tools/                   # 各种 MCP 工具
 │   ├── documentation.py     # 文档相关工具
 │   ├── api.py              # API 相关工具
-│   ├── code_generation.py   # 代码生成工具
+│   ├── code_generation.py   # 代码生成工具 (当前已禁用)
 │   ├── query.py            # 查询工具
-│   └── ...                 # 其他功能模块
+│   ├── backup.py           # 备份工具
+│   ├── class_method.py     # 类方法工具
+│   ├── debug.py            # 调试工具
+│   ├── resource.py         # 资源管理工具
+│   ├── search.py           # 搜索工具
+│   └── system.py           # 系统工具
 └── utils/                  # 工具助手功能
     ├── knowledge_base.py    # 知识库接口
     ├── response.py          # 标准化响应
-    └── ...                 # 其他辅助功能
+    ├── http_client.py       # HTTP 客户端
+    └── resource_manager.py  # 资源管理器
 ```
 
 ## 🎯 使用场景
@@ -194,13 +221,16 @@ magicapi_tools/
 ### 场景 1: 获取 API 详细信息
 使用 `get_examples` 工具获取 Magic-API 脚本语法示例和最佳实践。
 
-### 场景 2: 代码生成
-使用 `generate_code` 工具根据需求生成 Magic-API 脚本代码。
+### 场景 2: API 测试
+使用 `call_api` 工具测试 Magic-API 接口。
 
 ### 场景 3: 资源管理
-使用 `query_api_resources` 工具查询和管理 Magic-API 资源。
+使用 `manage_resource` 工具查询和管理 Magic-API 资源。
 
 ### 场景 4: 调试和搜索
-使用 `search_api_endpoints` 和 `debug_script` 工具进行 API 调试和搜索。
+使用 `search_api_endpoints` 和 `debug_endpoint` 工具进行 API 调试和搜索。
+
+### 场景 5: 文档查询
+使用 `get_documentation` 工具获取 Magic-API 相关文档。
 
 本项目 MCP 服务器专为 Magic-API 开发者设计，提供了一套完整的工作流工具，从脚本编写、API 管理到调试和部署，全方位提升开发效率。
