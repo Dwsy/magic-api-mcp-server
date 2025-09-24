@@ -1,0 +1,60 @@
+version: '3.8'
+
+services:
+  magic-api-mcp-server:
+    build: .
+    container_name: magic-api-mcp-server
+    ports:
+      - "8000:8000"  # HTTP模式端口
+    environment:
+      # Magic-API 服务配置
+      - MAGIC_API_BASE_URL=http://host.docker.internal:10712
+      - MAGIC_API_WS_URL=ws://host.docker.internal:10712/magic/web/console
+
+      # 可选认证配置
+      # - MAGIC_API_USERNAME=your_username
+      # - MAGIC_API_PASSWORD=your_password
+      # - MAGIC_API_TOKEN=your_token
+      # - MAGIC_API_AUTH_ENABLED=true
+
+      # 超时和日志配置
+      - MAGIC_API_TIMEOUT_SECONDS=30.0
+      - LOG_LEVEL=INFO
+
+      # MCP传输协议 (stdio 或 http)
+      - FASTMCP_TRANSPORT=stdio
+
+    # 网络配置 (如果需要连接到其他容器)
+    networks:
+      - magic-api-network
+
+    # 卷挂载 (可选，用于持久化或调试)
+    volumes:
+      - ./logs:/app/logs  # 日志持久化
+      # - ./config:/app/config  # 配置文件 (如果需要)
+
+    # 健康检查
+    healthcheck:
+      test: ["CMD", "python", "-c", "import sys; sys.exit(0)"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+    # 重启策略
+    restart: unless-stopped
+
+    # 资源限制
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+          cpus: '0.5'
+        reservations:
+          memory: 256M
+          cpus: '0.25'
+
+networks:
+  magic-api-network:
+    driver: bridge
+    name: magic-api-network
