@@ -110,7 +110,6 @@ async def interactive_debug_session():
             try:
                 # 确保输出缓冲区已刷新，readline状态正确
                 sys.stdout.flush()
-                import readline
                 readline.redisplay()
 
                 command_line = input("\ndebug> ").strip()

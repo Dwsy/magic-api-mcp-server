@@ -4,7 +4,23 @@
 用于测试方向键导航、Tab补全和路径自动补全功能
 """
 
-import readline
+try:
+    import readline
+except ImportError:
+    # Windows 系统使用 pyreadline3
+    try:
+        import pyreadline3 as readline
+    except ImportError:
+        # 如果都没有 readline 功能，创建一个兼容层
+        class MockReadline:
+            def get_line_buffer(self): return ""
+            def redisplay(self): pass
+            def set_completer(self, completer): pass
+            def set_completer_delims(self, delims): pass
+            def parse_and_bind(self, binding): pass
+            def read_history_file(self, filename): pass
+            def write_history_file(self, filename): pass
+        readline = MockReadline()
 import rlcompleter
 import sys
 
