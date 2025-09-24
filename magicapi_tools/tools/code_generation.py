@@ -1,4 +1,19 @@
-"""Magic-API 代码生成工具。"""
+"""Magic-API 代码生成工具。
+
+此模块提供智能代码生成功能，支持：
+- CRUD API接口自动生成
+- 数据库查询代码生成
+- API测试代码生成
+- 工作流模板代码生成
+
+主要工具：
+- generate_crud_api: 生成完整的CRUD API接口代码
+- generate_database_query: 生成数据库查询代码
+- generate_api_test: 生成API接口测试代码
+- generate_workflow_code: 生成工作流模板代码
+
+注意：此模块当前被禁用，如需使用请取消 __init__.py 中的注释。
+"""
 
 from __future__ import annotations
 

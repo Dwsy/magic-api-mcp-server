@@ -1,4 +1,29 @@
-"""Magic-API 文档/知识相关 MCP 工具。"""
+"""Magic-API 文档和知识库相关 MCP 工具。
+
+此模块提供全面的Magic-API文档查询和知识获取功能，包括：
+- 脚本语法文档和示例
+- 内置模块API文档
+- 函数库使用说明
+- 类型扩展功能介绍
+- 配置选项说明
+- 插件系统文档
+- 最佳实践和常见问题解答
+- 使用示例和代码片段
+
+主要工具：
+- get_script_syntax: 获取Magic-API脚本语法说明
+- get_module_api: 获取内置模块的API文档
+- get_function_docs: 获取内置函数库文档
+- get_extension_docs: 获取类型扩展功能文档
+- get_config_docs: 获取配置选项说明
+- get_plugin_docs: 获取插件系统文档
+- get_best_practices: 获取最佳实践指南
+- get_pitfalls: 获取常见问题和陷阱
+- get_workflow: 获取工作流模板
+- list_examples: 列出所有可用示例
+- get_examples: 获取特定类型的示例代码
+- get_docs: 获取官方文档索引和内容
+"""
 
 from __future__ import annotations
 

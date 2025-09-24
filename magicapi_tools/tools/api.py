@@ -1,4 +1,14 @@
-"""Magic-API API 执行类 MCP 工具。"""
+"""Magic-API API 执行类 MCP 工具。
+
+此模块提供Magic-API接口的直接调用和测试功能，支持：
+- 各种HTTP方法的API调用（GET、POST、PUT、DELETE等）
+- 灵活的参数传递（查询参数、请求体、请求头）
+- 自动错误处理和响应格式化
+- 实时API测试和调试
+
+主要工具：
+- call_magic_api: 调用Magic-API接口并返回请求结果
+"""
 
 from __future__ import annotations
 

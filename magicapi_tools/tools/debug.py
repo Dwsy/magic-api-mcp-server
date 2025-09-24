@@ -1,4 +1,24 @@
-"""Magic-API 调试相关 MCP 工具。"""
+"""Magic-API 调试相关 MCP 工具。
+
+此模块提供强大的调试功能，支持：
+- 断点设置和管理
+- 单步执行控制
+- 变量检查和状态监控
+- 调试会话管理
+- WebSocket连接状态监控
+
+主要工具：
+- set_breakpoint: 在指定API脚本中设置断点
+- remove_breakpoint: 移除指定的断点
+- resume_breakpoint_execution: 恢复断点执行，继续运行调试脚本
+- step_over_breakpoint: 单步执行，越过当前断点继续执行
+- list_breakpoints: 列出所有当前设置的断点
+- call_api_with_debug: 调用指定接口并在命中断点处暂停
+- execute_debug_session: 执行完整的调试会话
+- get_debug_status: 获取当前调试状态
+- clear_all_breakpoints: 清除所有断点
+- get_websocket_status: 获取WebSocket连接状态
+"""
 
 from __future__ import annotations
 

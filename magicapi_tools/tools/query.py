@@ -1,4 +1,17 @@
-"""Magic-API 查询相关 MCP 工具。"""
+"""Magic-API 查询相关 MCP 工具。
+
+此模块提供高效的资源查询和检索功能，包括：
+- 路径到ID的快速转换
+- API详细信息查询
+- 批量资源查询
+- 资源路径查找和匹配
+
+主要工具：
+- find_resource_id_by_path: 根据API路径查找对应的资源ID，支持模糊匹配
+- get_api_details_by_path: 根据API路径直接获取接口的详细信息，支持模糊匹配
+- find_api_ids_by_path: 批量查找匹配路径的API资源ID列表
+- find_api_details_by_path: 批量获取匹配路径的API资源详细信息
+"""
 
 from __future__ import annotations
 

@@ -1,4 +1,19 @@
-"""MCP 工具通用辅助函数。"""
+"""MCP 工具通用辅助函数。
+
+此模块提供所有工具共享的通用功能函数，包括：
+- 路径到ID的转换逻辑
+- API查找和匹配算法
+- 错误响应格式化
+- 资源树处理工具
+
+主要函数：
+- path_to_id_impl: 根据路径查找资源ID的实现
+- find_api_ids_by_path_impl: 查找路径对应的API ID列表
+- find_api_details_by_path_impl: 查找路径对应的API详细信息
+- error_response: 统一的错误响应格式化
+
+此模块被其他工具模块导入使用，不直接提供MCP工具。
+"""
 
 from __future__ import annotations
 

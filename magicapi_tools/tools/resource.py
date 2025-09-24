@@ -1,4 +1,26 @@
-"""Magic-API 资源管理工具模块。"""
+"""Magic-API 资源管理工具模块。
+
+此模块提供完整的Magic-API资源管理系统，包括：
+- 资源树浏览和查询
+- 资源创建、更新、删除操作
+- 分组管理和组织
+- 资源导入导出功能
+- 资源统计和分析
+
+主要工具：
+- get_resource_tree: 获取资源树，支持多种过滤和导出格式
+- get_resource_detail: 获取特定资源的详细信息
+- create_resource_group: 创建新的资源分组
+- create_api_resource: 创建新的API资源
+- copy_resource: 复制现有资源
+- move_resource: 移动资源到其他分组
+- delete_resource: 删除资源（支持软删除）
+- lock_resource: 锁定资源防止修改
+- unlock_resource: 解锁资源
+- list_resource_groups: 列出所有资源分组
+- export_resource_tree: 导出完整的资源树结构
+- get_resource_stats: 获取资源统计信息
+"""
 
 from __future__ import annotations
 from typing import TYPE_CHECKING, Annotated, Any, Dict, Literal, Optional

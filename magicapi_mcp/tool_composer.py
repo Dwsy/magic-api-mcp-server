@@ -208,7 +208,7 @@ class ToolComposer:
                 tool_registry.add_module(custom_module)
 
         # 创建MCP应用
-        mcp_app = FastMCP("Magic-API 助手")
+        mcp_app = FastMCP("Magic-API MCP Server")
 
         # 注册所有工具
         tool_registry.register_all_tools(mcp_app)

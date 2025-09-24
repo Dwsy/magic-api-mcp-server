@@ -1,4 +1,14 @@
-"""Magic-API 系统信息相关 MCP 工具。"""
+"""Magic-API 系统信息相关 MCP 工具。
+
+此模块提供系统级别的工具，包括：
+- 获取助手元信息和配置
+- 系统状态查询
+- 环境信息获取
+- 功能特性说明
+
+主要工具：
+- get_assistant_metadata: 获取Magic-API MCP Server的完整元信息
+"""
 
 from __future__ import annotations
 

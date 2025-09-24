@@ -1,4 +1,19 @@
-"""Magic-API 备份管理相关 MCP 工具。"""
+"""Magic-API 备份管理相关 MCP 工具。
+
+此模块提供完整的备份管理功能，包括：
+- 备份记录查询和过滤
+- 备份历史查看
+- 备份内容获取
+- 备份恢复操作
+- 自动备份创建
+
+主要工具：
+- list_backups: 查询备份列表，支持时间戳过滤和名称过滤
+- get_backup_history: 获取备份历史记录
+- get_backup_content: 获取指定备份的内容
+- rollback_backup: 回滚到指定的备份版本
+- create_full_backup: 创建完整的系统备份
+"""
 
 from __future__ import annotations
 

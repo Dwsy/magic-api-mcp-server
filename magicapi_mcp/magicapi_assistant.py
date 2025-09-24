@@ -20,10 +20,22 @@
 
     # 运行应用
     app.run()
+
+命令行使用示例:
+    # 运行完整工具集
+    uvx magic-api-mcp
+
+    # 运行特定工具组合
+    uvx magic-api-mcp --composition development
+
+    # 指定传输协议
+    uvx magic-api-mcp --transport http --port 8000
 """
 
 from __future__ import annotations
 
+import argparse
+import sys
 from typing import Any, List, Optional
 
 from magicapi_mcp.settings import MagicAPISettings
@@ -54,11 +66,61 @@ def create_app(
     """
     return _create_app(composition, settings, custom_modules)
 
+def main() -> None:
+    """命令行入口点函数，用于pip安装后的命令行调用。"""
+    if FastMCP is None:
+        raise SystemExit("未检测到 fastmcp，请先运行 `uv add fastmcp` 安装依赖。")
+
+    parser = argparse.ArgumentParser(
+        description="Magic-API MCP Server",
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+        epilog="""
+使用示例:
+  uvx magic-api-mcp-server                           # 运行完整工具集
+  uvx magic-api-mcp-server --composition development  # 运行开发工具集
+  uvx magic-api-mcp-server --transport http --port 8000  # HTTP模式运行
+        """
+    )
+
+    parser.add_argument(
+        "--composition",
+        choices=["full", "minimal", "development", "production", "documentation_only", "api_only", "backup_only", "class_method_only", "search_only"],
+        default="full",
+        help="选择工具组合 (默认: full)"
+    )
+
+    parser.add_argument(
+        "--transport",
+        choices=["stdio", "http"],
+        default="stdio",
+        help="传输协议 (默认: stdio)"
+    )
+
+    parser.add_argument(
+        "--host",
+        default="127.0.0.1",
+        help="HTTP服务器主机地址 (默认: 127.0.0.1)"
+    )
+
+    parser.add_argument(
+        "--port",
+        type=int,
+        default=8000,
+        help="HTTP服务器端口 (默认: 8000)"
+    )
+
+    args = parser.parse_args()
+
+    app = create_app(args.composition)
+
+    if args.transport == "http":
+        app.run(transport="http", host=args.host, port=args.port)
+    else:
+        app.run(transport="stdio")
+
+
 # 创建全局mcp对象供fastmcp导入
 # 注意：避免在模块级别重复创建app实例，交由调用方控制
 
 if __name__ == "__main__":  # pragma: no cover - 运行服务器专用分支
-    if FastMCP is None:
-        raise SystemExit("未检测到 fastmcp，请先运行 `uv add fastmcp` 安装依赖。")
-    app = create_app()
-    app.run()
+    main()

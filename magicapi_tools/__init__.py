@@ -41,7 +41,7 @@ __all__ = [
     "setup_readline",
     "load_resource_tree",
     "extract_api_endpoints",
-    "error_response"
+    "error_response",
     "find_api_id_by_path",
     "find_api_detail_by_path",
     "filter_endpoints",

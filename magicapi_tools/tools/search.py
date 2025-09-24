@@ -1,4 +1,15 @@
-"""Magic-API 搜索相关 MCP 工具。"""
+"""Magic-API 搜索相关 MCP 工具。
+
+此模块提供强大的搜索功能，支持：
+- API脚本内容关键词搜索
+- TODO注释搜索
+- 代码片段定位
+- 全文检索和过滤
+
+主要工具：
+- search_api_scripts: 在所有API脚本中搜索关键词
+- search_todo_comments: 搜索API脚本中的TODO注释
+"""
 
 from __future__ import annotations
 

@@ -1,4 +1,17 @@
-"""Magic-API 类和方法检索 MCP 工具。"""
+"""Magic-API 类和方法检索 MCP 工具。
+
+此模块提供Java类和方法的检索功能，支持：
+- 类和方法的分页浏览
+- 类详细信息查询
+- 方法签名和参数信息获取
+- 继承关系和接口实现查询
+- 构造函数和静态方法识别
+
+主要工具：
+- list_magic_api_classes: 列出所有Magic-API可用的类、扩展和函数，支持翻页浏览
+- get_class_details: 获取指定类的详细信息，包括方法、属性和继承关系
+- get_method_details: 获取指定方法的详细信息，包括参数类型和返回值
+"""
 
 from __future__ import annotations
 
