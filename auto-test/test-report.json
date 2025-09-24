@@ -1,0 +1,401 @@
+{
+  "startTime": "2025-09-24T14:49:12.926Z",
+  "phases": {
+    "phase1": {
+      "name": "基础信息收集与验证",
+      "tests": {
+        "get_assistant_metadata": {
+          "success": true,
+          "result": {
+            "system_prompt": "Mock system prompt",
+            "version": "2.2.0",
+            "features": [
+              "syntax",
+              "examples",
+              "docs"
+            ],
+            "environment": {
+              "base_url": "http://127.0.0.1:10712",
+              "auth_enabled": false
+            }
+          },
+          "duration": 413,
+          "attempts": 1
+        },
+        "list_available_modules": {
+          "success": true,
+          "result": {
+            "all_modules": [
+              "db",
+              "http",
+              "response",
+              "request",
+              "log",
+              "env",
+              "magic"
+            ],
+            "auto_import_modules": [
+              "db",
+              "log"
+            ],
+            "module_count": 7
+          },
+          "duration": 563,
+          "attempts": 1
+        },
+        "get_resource_tree": {
+          "success": true,
+          "result": {
+            "kind": "all",
+            "count": 0,
+            "nodes": [],
+            "filters_applied": {}
+          },
+          "duration": 199,
+          "attempts": 1
+        },
+        "list_backups": {
+          "success": true,
+          "result": {
+            "total_backups": 100,
+            "filtered_backups": 0,
+            "returned_backups": 0,
+            "limit": 10,
+            "filters_applied": {},
+            "backups": []
+          },
+          "duration": 250,
+          "attempts": 1
+        }
+      },
+      "summary": {
+        "passed": 4,
+        "failed": 0,
+        "total": 4
+      }
+    },
+    "phase2": {
+      "name": "文档查询功能测试",
+      "tests": {
+        "get_full_magic_script_syntax": {
+          "success": true,
+          "result": {
+            "language": "magic-script",
+            "version": "latest",
+            "sections": {
+              "keywords": {
+                "title": "关键字",
+                "items": [
+                  "var",
+                  "if",
+                  "for"
+                ]
+              },
+              "operators": {
+                "title": "运算符",
+                "math": [
+                  "+",
+                  "-",
+                  "*"
+                ]
+              }
+            }
+          },
+          "duration": 228,
+          "attempts": 1
+        },
+        "get_development_workflow": {
+          "success": true,
+          "result": {
+            "task": "api_script_development",
+            "steps": [
+              "资源定位",
+              "语法对齐",
+              "脚本准备",
+              "功能验证"
+            ],
+            "core_workflow_overview": {
+              "summary": "核心工作流描述"
+            }
+          },
+          "duration": 600,
+          "attempts": 1
+        }
+      },
+      "summary": {
+        "passed": 2,
+        "failed": 0,
+        "total": 2
+      }
+    },
+    "phase3": {
+      "name": "搜索与查询功能测试",
+      "tests": {
+        "search_api_endpoints": {
+          "success": true,
+          "result": [],
+          "duration": 366,
+          "attempts": 1
+        },
+        "get_resource_tree_with_depth": {
+          "success": true,
+          "result": {
+            "kind": "all",
+            "count": 0,
+            "nodes": [],
+            "filters_applied": {}
+          },
+          "duration": 564,
+          "attempts": 1
+        },
+        "search_api_scripts": {
+          "success": true,
+          "result": [],
+          "duration": 310,
+          "attempts": 1
+        },
+        "search_todo_comments": {
+          "success": true,
+          "result": [],
+          "duration": 524,
+          "attempts": 1
+        },
+        "search_knowledge_basic": {
+          "success": true,
+          "result": [],
+          "duration": 312,
+          "attempts": 1
+        },
+        "search_knowledge_category": {
+          "success": true,
+          "result": [],
+          "duration": 334,
+          "attempts": 1
+        }
+      },
+      "summary": {
+        "passed": 6,
+        "failed": 0,
+        "total": 6
+      }
+    },
+    "phase4": {
+      "name": "API 调用与调试功能测试",
+      "tests": {
+        "get_debug_status": {
+          "success": true,
+          "result": {
+            "status": "disconnected",
+            "active_sessions": 0
+          },
+          "duration": 139,
+          "attempts": 1
+        },
+        "get_websocket_status": {
+          "success": true,
+          "result": {
+            "connected": false,
+            "url": "ws://127.0.0.1:10712/magic/web/console"
+          },
+          "duration": 159,
+          "attempts": 1
+        },
+        "get_resource_statistics": {
+          "success": true,
+          "result": {
+            "total_apis": 0,
+            "total_groups": 0,
+            "total_functions": 0
+          },
+          "duration": 353,
+          "attempts": 1
+        },
+        "list_resource_groups": {
+          "success": true,
+          "result": [],
+          "duration": 242,
+          "attempts": 1
+        },
+        "export_resource_tree": {
+          "success": true,
+          "result": {
+            "format": "json",
+            "data": {}
+          },
+          "duration": 538,
+          "attempts": 1
+        },
+        "get_api_details_by_path": {
+          "success": true,
+          "result": {
+            "id": null,
+            "path": "/test/api",
+            "method": null
+          },
+          "duration": 166,
+          "attempts": 1
+        }
+      },
+      "summary": {
+        "passed": 6,
+        "failed": 0,
+        "total": 6
+      }
+    },
+    "phase5": {
+      "name": "备份与恢复功能测试",
+      "tests": {
+        "get_backup_history": {
+          "success": true,
+          "result": {
+            "backup_id": "test-backup-123",
+            "history": []
+          },
+          "duration": 452,
+          "attempts": 1
+        },
+        "get_backup_content": {
+          "success": true,
+          "result": {
+            "backup_id": "test-backup-123",
+            "timestamp": 1758725360217,
+            "content": {}
+          },
+          "duration": 568,
+          "attempts": 1
+        },
+        "list_backups_advanced": {
+          "success": true,
+          "result": {
+            "total_backups": 100,
+            "filtered_backups": 0,
+            "returned_backups": 0,
+            "limit": 10,
+            "filters_applied": {},
+            "backups": []
+          },
+          "duration": 462,
+          "attempts": 1
+        },
+        "get_best_practices": {
+          "success": true,
+          "result": {
+            "performance": {},
+            "security": {},
+            "debugging": {}
+          },
+          "duration": 452,
+          "attempts": 1
+        },
+        "get_common_pitfalls": {
+          "success": true,
+          "result": {
+            "common_issues": [],
+            "best_practices": []
+          },
+          "duration": 437,
+          "attempts": 1
+        },
+        "get_knowledge_overview": {
+          "success": true,
+          "result": {
+            "total_categories": 5,
+            "total_entries": 100,
+            "version": "2.2.0"
+          },
+          "duration": 518,
+          "attempts": 1
+        }
+      },
+      "summary": {
+        "passed": 6,
+        "failed": 0,
+        "total": 6
+      }
+    },
+    "phase6": {
+      "name": "高级功能与边界测试",
+      "tests": {
+        "invalid_params_handling": {
+          "success": true,
+          "result": [],
+          "duration": 523,
+          "attempts": 1
+        },
+        "empty_results_handling": {
+          "success": true,
+          "result": [],
+          "duration": 561,
+          "attempts": 1
+        },
+        "large_data_query": {
+          "success": true,
+          "result": {
+            "language": "magic-script",
+            "version": "latest",
+            "sections": {
+              "keywords": {
+                "title": "关键字",
+                "items": [
+                  "var",
+                  "if",
+                  "for"
+                ]
+              },
+              "operators": {
+                "title": "运算符",
+                "math": [
+                  "+",
+                  "-",
+                  "*"
+                ]
+              }
+            }
+          },
+          "duration": 224,
+          "attempts": 1
+        },
+        "concurrent_calls": {
+          "success": true,
+          "result": {
+            "concurrent_results": 3
+          },
+          "duration": 566,
+          "attempts": 1
+        },
+        "error_response_handling": {
+          "success": true,
+          "result": {
+            "error": {
+              "code": "not_implemented",
+              "message": "工具 nonexistent_tool 未实现"
+            }
+          },
+          "duration": 560,
+          "attempts": 1
+        },
+        "performance_benchmark": {
+          "success": true,
+          "result": {
+            "response_time": 298
+          },
+          "duration": 298,
+          "attempts": 1
+        }
+      },
+      "summary": {
+        "passed": 6,
+        "failed": 0,
+        "total": 6
+      }
+    }
+  },
+  "summary": {
+    "totalTests": 30,
+    "passed": 30,
+    "failed": 0,
+    "skipped": 0,
+    "successRate": "100.00%"
+  },
+  "endTime": "2025-09-24T14:49:24.822Z"
+}
