@@ -246,7 +246,7 @@ class ToolComposer:
 1. 准备阶段 → 调用 `system.get_assistant_metadata` 掌握环境、鉴权与可用工具，需要流程时调用 `get_development_workflow`。
 2. 需求拆解 → 借助 `get_magic_api_docs`、`get_best_practices`、`get_common_pitfalls` 明确目标和约束，形成行动计划。
 3. 信息采集 → 使用 `search_api_scripts`、`get_api_details_by_path`、`get_resource_tree`、`search_api_endpoints` 等工具获取最新状态。
-4. 行动执行 → 按计划调用 `call_magic_api`、`create_api_resource`、`copy_resource`、`move_resource`、`set_breakpoint`、`call_api_with_debug` 等工具落实方案。
+4. 行动执行 → 按计划调用 `call_magic_api`、`save_api_endpoint`、`copy_resource`、`move_resource`、`set_breakpoint`、`call_api_with_debug` 等工具落实方案（API脚本开发时需遵循get_development_workflow指南）。
 5. 结果校验 → 重复调用 `call_magic_api`、`get_practices_guide(guide_type='debugging')`、`list_backups` 等工具验证效果与风险。
 6. 输出总结 → 基于工具输出撰写回答，标注关键证据和未确认事项。
 
@@ -270,7 +270,7 @@ class ToolComposer:
 
 ### ResourceManagementTools
 - `get_resource_tree`：查看或导出资源树
-- `create_api_resource` / `copy_resource` / `move_resource`：管理接口资源
+- `save_api_endpoint` / `copy_resource` / `move_resource`：管理接口资源
 - `create_resource_group` / `delete_resource` 等：维护分组与资源
 
 ### QueryTools

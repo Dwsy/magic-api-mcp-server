@@ -65,8 +65,7 @@ async def test_breakpoint_header():
         result = await client.call_api_with_debug(
             "/test00/test0001",
             "GET",
-            breakpoints=[3, 4],
-            script_id="test_script"
+            breakpoints=[3, 4]
         )
 
         # 检查请求头是否包含断点信息

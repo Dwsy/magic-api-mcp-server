@@ -56,8 +56,7 @@ async def test_request_headers():
         result = await client.call_api_with_debug(
             "/test00/test0001",
             "GET",
-            breakpoints=[3, 4],
-            script_id="test_debug_script"
+            breakpoints=[3, 4]
         )
 
         print("   请求头详情:")

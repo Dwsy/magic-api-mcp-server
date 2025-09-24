@@ -72,6 +72,10 @@ class DebugTools:
                 str,
                 Field(description="HTTP请求方法，如'GET'、'POST'、'PUT'、'DELETE'等")
             ] = "GET",
+            data: Annotated[
+                Optional[Any],
+                Field(description="请求体数据，适用于POST/PUT等方法")
+            ] = None,
             params: Annotated[
                 Optional[Any],
                 Field(description="URL查询参数")
@@ -84,6 +88,7 @@ class DebugTools:
             result = context.debug_tools.call_api_with_debug_tool(
                 path=path,
                 method=method,
+                data=data,
                 params=params,
                 breakpoints=breakpoints,
             )

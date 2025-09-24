@@ -1045,8 +1045,7 @@ async def interactive_debug_session():
                             path,
                             "GET",
                             params={"debug": "true", "test_mode": "interactive"},
-                            breakpoints=breakpoints,
-                            script_id="e411103cbd334af9b264fe3fe55d1a42"
+                            breakpoints=breakpoints
                         ), loop
                     )
                     # 等待异步调用完成
@@ -1372,6 +1371,7 @@ class MagicAPIDebugTools:
         self,
         path: str,
         method: str = "GET",
+        data: Optional[Dict[str, Any]] = None,
         params: Optional[Dict[str, Any]] = None,
         breakpoints: Optional[List[int]] = None,
     ) -> Dict[str, Any]:
@@ -1382,10 +1382,11 @@ class MagicAPIDebugTools:
             asyncio.set_event_loop(loop)
             result = loop.run_until_complete(
                 self.debug_client.call_api_with_debug(
+                    path,  # api_path 参数
                     method=method,
+                    data=data,
                     params=params,
-                    breakpoints=breakpoints or [],
-                    script_id="e411103cbd334af9b264fe3fe55d1a42"  # 默认script_id
+                    breakpoints=breakpoints or []
                 )
             )
             loop.close()
