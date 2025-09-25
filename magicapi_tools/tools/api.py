@@ -23,11 +23,15 @@ from typing import TYPE_CHECKING, Annotated, Any, Dict, Optional
 
 from pydantic import Field
 
+from magicapi_tools.logging_config import get_logger
 from magicapi_tools.utils import error_response
 
 if TYPE_CHECKING:
     from fastmcp import FastMCP
     from magicapi_mcp.tool_registry import ToolContext
+
+# 获取API工具的logger
+logger = get_logger('tools.api')
 
 
 class ApiTools:
@@ -104,10 +108,18 @@ class ApiTools:
                             actual_path = api_path
 
                         # 更新提示信息，告知用户正在使用转换后的路径
-                        print(f"🔄 使用接口ID {api_id}，已自动转换为: {actual_method} {actual_path}")
+                        logger.info(f"使用接口ID {api_id}，已自动转换为: {actual_method} {actual_path}")
                     else:
+                        logger.error(f"接口ID转换失败: 无法获取有效的路径信息")
+                        logger.error(f"  API ID: {api_id}")
+                        logger.debug(f"  获取到的数据: {payload}")
+                        logger.error(f"  方法: {api_method}, 路径: {api_path}")
                         return error_response("invalid_id", f"接口ID {api_id} 无法获取有效的路径信息")
                 else:
+                    logger.error(f"无法找到接口ID的详细信息")
+                    logger.error(f"  API ID: {api_id}")
+                    logger.error(f"  获取结果: {ok}")
+                    logger.debug(f"  错误详情: {payload}")
                     return error_response("id_not_found", f"无法找到接口ID {api_id} 的详细信息")
 
             ok, payload = context.http_client.call_api(actual_method, actual_path, params=params, data=data, headers=headers)

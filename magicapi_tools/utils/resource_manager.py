@@ -10,6 +10,10 @@ import requests
 
 from .http_client import MagicAPIHTTPClient
 from magicapi_mcp.settings import MagicAPISettings
+from magicapi_tools.logging_config import get_logger
+
+# 获取资源管理器的logger
+logger = get_logger('utils.resource_manager')
 
 
 def build_api_save_kwargs_from_detail(detail: Dict[str, Any]) -> Dict[str, Any]:
@@ -20,6 +24,7 @@ def build_api_save_kwargs_from_detail(detail: Dict[str, Any]) -> Dict[str, Any]:
 
     Returns:
         Dict[str, Any]: 可直接传递给 `create_api_tool` 的关键字参数。
+                     包含 'id' 字段用于更新操作。
 
     Raises:
         ValueError: 当 detail 非字典或缺少必要字段时抛出。
@@ -45,7 +50,7 @@ def build_api_save_kwargs_from_detail(detail: Dict[str, Any]) -> Dict[str, Any]:
         "response_body": detail_copy.get("responseBody"),
         "response_body_definition": detail_copy.get("responseBodyDefinition"),
         "options": detail_copy.get("options"),
-        "file_id": detail_copy.get("id"),
+        "id": detail_copy.get("id"),
     }
 
 
@@ -65,9 +70,10 @@ class MagicAPIResourceTools:
         """
         self.manager = manager
 
-    def create_group_tool(
+    def save_group_tool(
         self,
         name: Optional[str] = None,
+        id: Optional[str] = None,
         parent_id: str = "0",
         group_type: str = "api",
         path: Optional[str] = None,
@@ -75,10 +81,11 @@ class MagicAPIResourceTools:
         groups_data: Optional[List[Dict[str, Any]]] = None,
     ) -> Dict[str, Any]:
         """
-        创建分组（支持单个和批量操作）。
+        保存分组（支持创建和更新操作）。
 
         Args:
-            name: 分组名称（单个操作）
+            name: 分组名称（创建时必需）
+            id: 分组ID（更新时必需）
             parent_id: 父分组ID
             group_type: 分组类型
             path: 分组路径
@@ -90,19 +97,20 @@ class MagicAPIResourceTools:
         """
         # 判断是批量操作还是单个操作
         if groups_data is not None:
-            return self._batch_create_groups(groups_data)
+            return self._batch_save_groups(groups_data)
         else:
-            return self._create_single_group(name, parent_id, group_type, path, options)
+            return self._save_single_group(name, id, parent_id, group_type, path, options)
 
-    def _create_single_group(
+    def _save_single_group(
         self,
-        name: str,
+        name: Optional[str] = None,
+        id: Optional[str] = None,
         parent_id: str = "0",
         group_type: str = "api",
         path: Optional[str] = None,
         options: Optional[str] = None,
     ) -> Dict[str, Any]:
-        """创建单个分组。"""
+        """保存单个分组（支持创建和更新）。"""
         options_dict = None
         if options:
             try:
@@ -110,36 +118,40 @@ class MagicAPIResourceTools:
             except json.JSONDecodeError:
                 return {"error": {"code": "invalid_json", "message": f"options 格式错误: {options}"}}
 
-        group_id = self.manager.create_group(
+        group_id = self.manager.save_group(
             name=name,
+            id=id,
             parent_id=parent_id,
             group_type=group_type,
             path=path,
             options=options_dict,
         )
         if group_id:
-            return {"success": True, "group_id": group_id, "name": name}
-        return {"error": {"code": "create_failed", "message": f"创建分组 '{name}' 失败"}}
+            operation = "更新" if id else "创建"
+            return {"success": True, "group_id": group_id, "name": name, "operation": operation}
+        operation = "更新" if id else "创建"
+        return {"error": {"code": "save_failed", "message": f"{operation}分组 '{name}' 失败"}}
 
-    def _batch_create_groups(self, groups_data: List[Dict[str, Any]]) -> Dict[str, Any]:
-        """批量创建分组。"""
+    def _batch_save_groups(self, groups_data: List[Dict[str, Any]]) -> Dict[str, Any]:
+        """批量保存分组（支持创建和更新）。"""
         results = []
         for group_data in groups_data:
             try:
-                result = self._create_single_group(
-                    name=group_data["name"],
+                result = self._save_single_group(
+                    name=group_data.get("name"),
+                    id=group_data.get("id"),
                     parent_id=group_data.get("parent_id", "0"),
                     group_type=group_data.get("group_type", "api"),
                     path=group_data.get("path"),
                     options=group_data.get("options")
                 )
                 results.append({
-                    "name": group_data["name"],
+                    "name": group_data.get("name", "Unknown"),
                     "result": result
                 })
             except Exception as e:
                 results.append({
-                    "name": group_data["name"],
+                    "name": group_data.get("name", "Unknown"),
                     "result": {"error": {"code": "batch_error", "message": str(e)}}
                 })
 
@@ -169,7 +181,7 @@ class MagicAPIResourceTools:
         response_body_definition: Optional[Dict[str, Any]] = None,
         options: Optional[List[Dict[str, Any]]] = None,
         apis_data: Optional[List[Dict[str, Any]]] = None,
-        file_id: Optional[str] = None,
+        id: Optional[str] = None,
     ) -> Dict[str, Any]:
         """
         保存API接口（支持单个创建或更新操作，包含完整API配置）。
@@ -190,14 +202,14 @@ class MagicAPIResourceTools:
             response_body_definition: 响应体结构定义（可选）
             options: 接口选项配置（可选）
             apis_data: API数据列表（批量操作，已废弃）
-            file_id: 文件ID（更新操作必需，用于标识要更新的API）
+            id: 文件ID（更新操作必需，用于标识要更新的API）
 
         Returns:
             保存成功返回结果，失败返回错误信息
         """
         # 判断是批量操作还是单个操作
         if apis_data is not None:
-            return self._batch_create_apis(apis_data)
+            return self._batch_save_apis(apis_data)
         else:
             return self._save_single_api(
                 group_id=group_id,
@@ -214,7 +226,7 @@ class MagicAPIResourceTools:
                 response_body=response_body,
                 response_body_definition=response_body_definition,
                 options=options,
-                file_id=file_id
+                id=id
             )
 
     def _save_single_api(
@@ -233,82 +245,75 @@ class MagicAPIResourceTools:
         response_body: Optional[str] = None,
         response_body_definition: Optional[Dict[str, Any]] = None,
         options: Optional[List[Dict[str, Any]]] = None,
-        file_id: Optional[str] = None,
+        id: Optional[str] = None,
     ) -> Dict[str, Any]:
         """保存单个API接口（支持创建和更新操作）。"""
         # 构建完整的API数据对象，包含所有配置选项
         api_data = {}
 
-        # 根据是否提供file_id判断是创建还是更新
-        if file_id:
-            # 更新操作：在请求体中包含id字段
-            api_data["id"] = file_id
-            operation = "更新"
-        else:
-            # 创建操作：必需的基本字段
-            api_data["name"] = name
-            api_data["method"] = method.upper()
-            api_data["path"] = path
-            api_data["script"] = script
-            api_data["groupId"] = group_id
-            operation = "创建"
 
-        # 添加可选字段（创建和更新都适用）
-        if description is not None:
-            api_data["description"] = description
+        api_data["name"] = name
+        api_data["method"] = method.upper()
+        api_data["path"] = path
+        api_data["script"] = script
+        api_data["groupId"] = group_id
+        api_data["id"] = id
+        api_data["description"] = description
+        api_data["parameters"] = parameters
+        api_data["headers"] = headers
+        api_data["paths"] = paths
+        api_data["requestBody"] = request_body
+        api_data["requestBodyDefinition"] = request_body_definition
+        api_data["responseBody"] = response_body
+        api_data["responseBodyDefinition"] = response_body_definition
+        api_data["options"] = options
 
-        if parameters is not None:
-            api_data["parameters"] = parameters
-        elif not file_id:  # 创建时设置默认值
-            api_data["parameters"] = []
 
-        if headers is not None:
-            api_data["headers"] = headers
-        elif not file_id:  # 创建时设置默认值
-            api_data["headers"] = []
+        operation = "更新" if id else "创建"
 
-        if paths is not None:
-            api_data["paths"] = paths
-        elif not file_id:  # 创建时设置默认值
-            api_data["paths"] = []
+        # 保存API文件并获取详细的错误信息
+        result_file_id, error_details = self.manager.save_api_file_with_error_details(
+            group_id=group_id,
+            name=name,
+            method=method,
+            path=path,
+            script=script,
+            id=id,
+            description=description,
+            parameters=parameters,
+            headers=headers,
+            paths=paths,
+            request_body=request_body,
+            request_body_definition=request_body_definition,
+            response_body=response_body,
+            response_body_definition=response_body_definition,
+            options=options,
+        )
 
-        if request_body is not None:
-            api_data["requestBody"] = request_body
-        elif not file_id:  # 创建时设置默认值
-            api_data["requestBody"] = ""
-
-        if request_body_definition is not None:
-            api_data["requestBodyDefinition"] = request_body_definition
-
-        if response_body is not None:
-            api_data["responseBody"] = response_body
-        elif not file_id:  # 创建时设置默认值
-            api_data["responseBody"] = ""
-
-        if response_body_definition is not None:
-            api_data["responseBodyDefinition"] = response_body_definition
-
-        if options is not None:
-            api_data["options"] = options
-        elif not file_id:  # 创建时设置默认值
-            api_data["options"] = []
-
-        result_file_id = self.manager.save_api_file(group_id, api_data)
         if result_file_id:
-            return {"success": True, "file_id": result_file_id, "name": name or "updated_api", "path": path or "updated_path", "operation": operation}
-        return {"error": {"code": f"{operation.lower()}_failed", "message": f"{operation}API接口失败"}}
+            return {"success": True, "id": result_file_id, "name": name or "updated_api", "path": path or "updated_path", "operation": operation}
 
-    def _batch_create_apis(self, apis_data: List[Dict[str, Any]]) -> Dict[str, Any]:
-        """批量创建API接口。"""
+        # 返回详细的错误信息
+        return {
+            "error": {
+                "code": error_details.get("code", "save_failed"),
+                "message": error_details.get("message", f"{operation}API接口失败"),
+                "details": error_details
+            }
+        }
+
+    def _batch_save_apis(self, apis_data: List[Dict[str, Any]]) -> Dict[str, Any]:
+        """批量保存API接口（支持创建和更新）。"""
         results = []
         for api_data in apis_data:
             try:
-                result = self._create_single_api(
-                    group_id=api_data["group_id"],
-                    name=api_data["name"],
+                result = self._save_single_api(
+                    group_id=api_data.get("group_id"),
+                    name=api_data.get("name"),
                     method=api_data.get("method", "GET"),
-                    path=api_data["path"],
-                    script=api_data["script"],
+                    path=api_data.get("path"),
+                    script=api_data.get("script"),
+                    id=api_data.get("id"),
                     description=api_data.get("description"),
                     parameters=api_data.get("parameters"),
                     headers=api_data.get("headers"),
@@ -320,12 +325,12 @@ class MagicAPIResourceTools:
                     options=api_data.get("options")
                 )
                 results.append({
-                    "name": api_data["name"],
+                    "name": api_data.get("name", "Unknown"),
                     "result": result
                 })
             except Exception as e:
                 results.append({
-                    "name": api_data["name"],
+                    "name": api_data.get("name", "Unknown"),
                     "result": {"error": {"code": "batch_error", "message": str(e)}}
                 })
 
@@ -748,28 +753,48 @@ class MagicAPIResourceManager:
         else:
             print(f"❌ 登录失败: {response.text}")
 
-    def create_group(self, name: str, parent_id: str = "0", group_type: str = "api",
-                    path: str = None, options: Dict = None) -> Optional[str]:
+    def save_group(self, name: Optional[str] = None, id: Optional[str] = None,
+                   parent_id: str = "0", group_type: str = "api",
+                   path: Optional[str] = None, options: Optional[Dict] = None) -> Optional[str]:
         """
-        创建分组目录
+        保存分组目录（支持创建和更新操作）
         基于 MagicResourceController.saveFolder 实现
 
+        系统通过是否包含 id 字段来判断是新建还是更新操作：
+        - 创建操作：id 为 None 或不存在
+        - 更新操作：id 存在且有效
+
         Args:
-            name: 分组名称
+            name: 分组名称（创建时必需）
+            id: 分组ID（更新时必需）
             parent_id: 父分组ID，默认为根目录"0"
             group_type: 分组类型，默认为"api"
             path: 分组路径
             options: 选项配置
 
         Returns:
-            创建成功返回分组ID，失败返回None
+            保存成功返回分组ID，失败返回None
         """
-        # 构建请求数据，避免options序列化问题
+        # 处理分组类型标识
+        processed_group_type = group_type
+        if not processed_group_type:
+            # 如果没有类型标识，使用默认值
+            processed_group_type = "unknown"
+        # 确保类型以 "-group" 结尾
+        if not processed_group_type.endswith("-group"):
+            processed_group_type = f"{processed_group_type}-group"
+
+        # 构建请求数据
         group_data = {
-            "name": name,
             "parentId": parent_id,
-            "type": group_type
+            "type": processed_group_type
         }
+
+        # 添加必需字段
+        if name is not None:
+            group_data["name"] = name
+        if id is not None:
+            group_data["id"] = id
 
         # 只在path和options都不为空时才添加
         if path is not None:
@@ -778,8 +803,11 @@ class MagicAPIResourceManager:
         if options is not None and options != {}:
             group_data["options"] = options
 
+        is_update = id is not None
+        operation = "更新" if is_update else "创建"
+
         try:
-            print(f"📝 创建分组请求数据: {group_data}")
+            print(f"📝 {operation}分组请求数据: {group_data}")
             response = self.session.post(
                 f"{self.base_url}/magic/web/resource/folder/save",
                 json=group_data
@@ -792,14 +820,14 @@ class MagicAPIResourceManager:
                 result = response.json()
                 if result.get('code') == 1:
                     group_id = result.get('data')
-                    print(f"✅ 创建分组成功: {name} (ID: {group_id})")
+                    print(f"✅ {operation}分组成功: {name or 'updated_group'} (ID: {group_id})")
                     return group_id
                 else:
-                    print(f"❌ 创建分组失败: {result.get('message', '未知错误')}")
+                    print(f"❌ {operation}分组失败: {result.get('message', '未知错误')}")
             else:
                 print(f"❌ 请求失败: {response.status_code} - {response.text}")
         except Exception as e:
-            print(f"❌ 创建分组时出错: {e}")
+            print(f"❌ {operation}分组时出错: {e}")
 
         return None
 
@@ -1091,11 +1119,22 @@ class MagicAPIResourceManager:
                 if result.get('code') == 1:
                     return result.get('data')
                 else:
-                    print(f"❌ 获取文件详情失败: {result.get('message', '未知错误')}")
+                    error_msg = result.get('message', '未知错误')
+                    error_detail = result.get('data')
+                    print(f"❌ 获取文件详情失败: {error_msg}")
+                    print(f"   文件ID: {file_id}")
+                    print(f"   错误详情: {error_detail}")
+                    print(f"   完整响应: {result}")
             else:
                 print(f"❌ 请求失败: {response.status_code} - {response.text}")
+                print(f"   文件ID: {file_id}")
+                print(f"   请求URL: {self.base_url}/magic/web/resource/file/{file_id}")
+                print(f"   响应头: {dict(response.headers)}")
         except Exception as e:
             print(f"❌ 获取文件详情时出错: {e}")
+            print(f"   文件ID: {file_id}")
+            import traceback
+            print(f"   错误堆栈: {traceback.format_exc()}")
 
         return None
 
@@ -1175,54 +1214,149 @@ class MagicAPIResourceManager:
 
         return False
 
-    def save_api_file(self, group_id: str, api_data: Dict, auto_save: bool = False) -> Optional[str]:
+    def save_api_file(
+        self,
+        group_id: Optional[str] = None,
+        name: Optional[str] = None,
+        method: Optional[str] = None,
+        path: Optional[str] = None,
+        script: Optional[str] = None,
+        id: Optional[str] = None,
+        description: Optional[str] = None,
+        parameters: Optional[List[Dict[str, Any]]] = None,
+        headers: Optional[List[Dict[str, Any]]] = None,
+        paths: Optional[List[Dict[str, Any]]] = None,
+        request_body: Optional[str] = None,
+        request_body_definition: Optional[Dict[str, Any]] = None,
+        response_body: Optional[str] = None,
+        response_body_definition: Optional[Dict[str, Any]] = None,
+        options: Optional[List[Dict[str, Any]]] = None,
+        auto_save: bool = False
+    ) -> Optional[str]:
         """
-        保存API文件
+        保存API文件（支持创建和更新操作）
         基于 MagicResourceController.saveFile 实现
 
         Args:
-            group_id: 分组ID
-            api_data: API数据，包含name、method、path、script等字段
+            group_id: 分组ID（创建时必需）
+            name: API名称
+            method: HTTP方法
+            path: API路径
+            script: 脚本内容
+            id: 文件ID（更新时必需）
+            description: API描述
+            parameters: 查询参数列表
+            headers: 请求头列表
+            paths: 路径变量列表
+            request_body: 请求体示例
+            request_body_definition: 请求体结构定义
+            response_body: 响应体示例
+            response_body_definition: 响应体结构定义
+            options: 接口选项配置
             auto_save: 是否自动保存
 
         Returns:
             保存成功返回文件ID，失败返回None
         """
         try:
-            # 验证必要字段
-            required_fields = ['name', 'method', 'path', 'script']
-            for field in required_fields:
-                if field not in api_data:
-                    print(f"❌ save_api_file1缺少必要字段: {field}")
+            is_update = id is not None
+
+            if is_update:
+                # 更新操作：获取现有数据并合并
+                existing_data = self.get_file_detail(id)
+                if not existing_data:
+                    logger.error(f"更新API失败: 无法获取现有数据进行合并")
+                    logger.error(f"  API ID: {id}")
+                    logger.error(f"  操作: 更新API接口")
+                    logger.error(f"  错误原因: get_file_detail返回None")
+                    logger.error(f"  建议: 检查API ID是否正确，或该API是否已被删除")
                     return None
 
-            # 构建完整的API对象，基于现有API的结构
-            full_api_data = {
-                "name": api_data['name'],
-                "method": api_data['method'].upper(),
-                "path": api_data['path'],
-                "script": api_data['script'],
-                "groupId": group_id,
-                "parameters": [],
-                "options": [],
-                "requestBody": "",
-                "headers": [],
-                "paths": [],
-                "responseBody": ""
-            }
+                # 合并现有数据和新数据
+                full_api_data = existing_data.copy()
+                # 更新提供的字段
+                if name is not None:
+                    full_api_data["name"] = name
+                if method is not None:
+                    full_api_data["method"] = method.upper()
+                if path is not None:
+                    full_api_data["path"] = path
+                if script is not None:
+                    full_api_data["script"] = script
+                if description is not None:
+                    full_api_data["description"] = description
+                if parameters is not None:
+                    full_api_data["parameters"] = parameters
+                if headers is not None:
+                    full_api_data["headers"] = headers
+                if paths is not None:
+                    full_api_data["paths"] = paths
+                if request_body is not None:
+                    full_api_data["requestBody"] = request_body
+                if request_body_definition is not None:
+                    full_api_data["requestBodyDefinition"] = request_body_definition
+                if response_body is not None:
+                    full_api_data["responseBody"] = response_body
+                if response_body_definition is not None:
+                    full_api_data["responseBodyDefinition"] = response_body_definition
+                if options is not None:
+                    full_api_data["options"] = options
+
+                # 确保有必要的字段用于更新
+                if "groupId" not in full_api_data and group_id:
+                    full_api_data["groupId"] = group_id
+
+            else:
+                # 创建操作：验证必要字段
+                required_fields = ['name', 'method', 'path', 'script']
+                required_values = [name, method, path, script]
+                for field, value in zip(required_fields, required_values):
+                    if value is None:
+                        print(f"❌ save_api_file缺少必要字段: {field}")
+                        return None
+
+                # 构建完整的API对象，基于现有API的结构
+                full_api_data = {
+                    "name": name,
+                    "method": method.upper(),
+                    "path": path,
+                    "script": script,
+                    "groupId": group_id,
+                    "parameters": parameters or [],
+                    "options": options or [],
+                    "requestBody": request_body or "",
+                    "headers": headers or [],
+                    "paths": paths or [],
+                    "responseBody": response_body or "",
+                    "description": description or "",
+                }
+
+                # 添加可选的结构定义字段
+                if request_body_definition:
+                    full_api_data["requestBodyDefinition"] = request_body_definition
+                if response_body_definition:
+                    full_api_data["responseBodyDefinition"] = response_body_definition
 
             # 将API数据转换为JSON字符串
             api_json = json.dumps(full_api_data, ensure_ascii=False)
-            print(f"📝 保存API文件请求数据: {api_json[:100]}...")
+            print(f"📝 保存API文件请求数据: {api_json}")
+
+            # 构建请求参数
+            params = {
+                'groupId': full_api_data.get("groupId"),
+                'auto': '1' if auto_save else '0'
+            }
+
+            # 如果是更新操作，添加到URL中
+            url = f"{self.base_url}/magic/web/resource/file/api/save"
+            if is_update:
+                url += f"/{id}"
 
             # 使用application/json类型发送完整的API对象
             response = self.session.post(
-                f"{self.base_url}/magic/web/resource/file/api/save",
+                url,
                 json=full_api_data,
-                params={
-                    'groupId': group_id,
-                    'auto': '1' if auto_save else '0'
-                }
+                params=params
             )
 
             print(f"📊 响应状态: {response.status_code}")
@@ -1232,16 +1366,207 @@ class MagicAPIResourceManager:
                 result = response.json()
                 if result.get('code') == 1:
                     file_id = result.get('data')
-                    print(f"✅ 保存API文件成功: {api_data['name']} (ID: {file_id})")
+                    operation = "更新" if is_update else "创建"
+                    print(f"✅ {operation}API文件成功: {full_api_data['name']} (ID: {file_id})")
                     return file_id
                 else:
-                    print(f"❌ 保存API文件失败: {result.get('message', '未知错误')}")
+                    operation = "更新" if is_update else "创建"
+                    print(f"❌ {operation}API文件失败: {result.get('message', '未知错误')}")
             else:
                 print(f"❌ 请求失败: {response.status_code} - {response.text}")
         except Exception as e:
-            print(f"❌ 保存API文件时出错: {e}")
+            operation = "更新" if is_update else "创建"
+            print(f"❌ {operation}API文件时出错: {e}")
 
         return None
+
+    def save_api_file_with_error_details(
+        self,
+        group_id: Optional[str] = None,
+        name: Optional[str] = None,
+        method: Optional[str] = None,
+        path: Optional[str] = None,
+        script: Optional[str] = None,
+        id: Optional[str] = None,
+        description: Optional[str] = None,
+        parameters: Optional[List[Dict[str, Any]]] = None,
+        headers: Optional[List[Dict[str, Any]]] = None,
+        paths: Optional[List[Dict[str, Any]]] = None,
+        request_body: Optional[str] = None,
+        request_body_definition: Optional[Dict[str, Any]] = None,
+        response_body: Optional[str] = None,
+        response_body_definition: Optional[Dict[str, Any]] = None,
+        options: Optional[List[Dict[str, Any]]] = None,
+        auto_save: bool = False
+    ) -> tuple[Optional[str], Dict[str, Any]]:
+        """
+        保存API文件并返回详细的错误信息（支持创建和更新操作）
+        基于 MagicResourceController.saveFile 实现
+
+        Returns:
+            tuple: (file_id, error_details) - file_id为None时error_details包含错误信息
+        """
+        try:
+            is_update = id is not None
+
+            if is_update:
+                # 更新操作：获取现有数据并合并
+                existing_data = self.get_file_detail(id)
+                if not existing_data:
+                    return None, {
+                        "code": "file_not_found",
+                        "message": "找不到要更新的API文件",
+                        "details": f"API ID: {id}",
+                        "suggestion": "检查API ID是否正确，或该API是否已被删除"
+                    }
+
+                # 合并现有数据和新数据
+                full_api_data = existing_data.copy()
+                # 更新提供的字段
+                if name is not None:
+                    full_api_data["name"] = name
+                if method is not None:
+                    full_api_data["method"] = method.upper()
+                if path is not None:
+                    full_api_data["path"] = path
+                if script is not None:
+                    full_api_data["script"] = script
+                if description is not None:
+                    full_api_data["description"] = description
+                if parameters is not None:
+                    full_api_data["parameters"] = parameters
+                if headers is not None:
+                    full_api_data["headers"] = headers
+                if paths is not None:
+                    full_api_data["paths"] = paths
+                if request_body is not None:
+                    full_api_data["requestBody"] = request_body
+                if request_body_definition is not None:
+                    full_api_data["requestBodyDefinition"] = request_body_definition
+                if response_body is not None:
+                    full_api_data["responseBody"] = response_body
+                if response_body_definition is not None:
+                    full_api_data["responseBodyDefinition"] = response_body_definition
+                if options is not None:
+                    full_api_data["options"] = options
+
+                # 确保有必要的字段用于更新
+                if "groupId" not in full_api_data and group_id:
+                    full_api_data["groupId"] = group_id
+
+            else:
+                # 创建操作：验证必要字段
+                required_fields = ['name', 'method', 'path', 'script']
+                required_values = [name, method, path, script]
+                missing_fields = []
+                for field, value in zip(required_fields, required_values):
+                    if value is None:
+                        missing_fields.append(field)
+
+                if missing_fields:
+                    return None, {
+                        "code": "missing_required_fields",
+                        "message": f"创建API缺少必需字段: {', '.join(missing_fields)}",
+                        "missing_fields": missing_fields
+                    }
+
+                # 构建完整的API对象，基于现有API的结构
+                full_api_data = {
+                    "name": name,
+                    "method": method.upper(),
+                    "path": path,
+                    "script": script,
+                    "groupId": group_id,
+                    "parameters": parameters or [],
+                    "options": options or [],
+                    "requestBody": request_body or "",
+                    "headers": headers or [],
+                    "paths": paths or [],
+                    "responseBody": response_body or "",
+                    "description": description or "",
+                }
+
+                # 添加可选的结构定义字段
+                if request_body_definition:
+                    full_api_data["requestBodyDefinition"] = request_body_definition
+                if response_body_definition:
+                    full_api_data["responseBodyDefinition"] = response_body_definition
+
+            # 将API数据转换为JSON字符串
+            api_json = json.dumps(full_api_data, ensure_ascii=False)
+            print(f"📝 保存API文件请求数据: {api_json}")
+
+            # 构建请求参数
+            params = {
+                'groupId': full_api_data.get("groupId"),
+                'auto': '1' if auto_save else '0'
+            }
+
+            # 如果是更新操作，添加到URL中
+            url = f"{self.base_url}/magic/web/resource/file/api/save"
+            if is_update:
+                url += f"/{id}"
+
+            # 使用application/json类型发送完整的API对象
+            response = self.session.post(
+                url,
+                json=full_api_data,
+                params=params
+            )
+
+            print(f"📊 响应状态: {response.status_code}")
+            print(f"📄 响应内容: {response.text}")
+
+            if response.status_code == 200:
+                try:
+                    result = response.json()
+                    if result.get('code') == 1:
+                        file_id = result.get('data')
+                        operation = "更新" if is_update else "创建"
+                        print(f"✅ {operation}API文件成功: {full_api_data['name']} (ID: {file_id})")
+                        return file_id, {}
+                    else:
+                        operation = "更新" if is_update else "创建"
+                        error_message = result.get('message', '未知错误')
+                        print(f"❌ {operation}API文件失败: {error_message}")
+
+                        # 返回完整的错误信息
+                        return None, {
+                            "code": str(result.get('code', 'api_error')),
+                            "message": error_message,
+                            "http_status": response.status_code,
+                            "response_data": result,
+                            "request_data": full_api_data,
+                            "url": url,
+                            "operation": operation
+                        }
+                except json.JSONDecodeError as e:
+                    return None, {
+                        "code": "invalid_json_response",
+                        "message": f"服务器返回了无效的JSON响应: {e}",
+                        "http_status": response.status_code,
+                        "raw_response": response.text,
+                        "url": url
+                    }
+            else:
+                return None, {
+                    "code": f"http_{response.status_code}",
+                    "message": f"HTTP请求失败: {response.status_code}",
+                    "http_status": response.status_code,
+                    "response_text": response.text,
+                    "url": url
+                }
+
+        except Exception as e:
+            operation = "更新" if is_update else "创建"
+            print(f"❌ {operation}API文件时出错: {e}")
+
+            return None, {
+                "code": "unexpected_error",
+                "message": f"{operation}API时发生异常: {str(e)}",
+                "exception_type": type(e).__name__,
+                "operation": operation
+            }
 
     def print_resource_tree(self, tree_data: Dict, indent: int = 0, filter_type: str = "api",
                           csv_format: bool = False, search_pattern: str = None, max_depth: int = None):
@@ -1532,10 +1857,27 @@ class MagicAPIResourceManager:
         for node in nodes:
             if 'node' in node:
                 node_info = node['node']
+
+                # 判断是否为分组：只要有子节点就是分组
+                has_children = 'children' in node and node['children']
+
+                if has_children:
+                    # 是分组：类型设为 xxx-group 格式
+                    group_type = folder_type
+                    if not group_type:
+                        # 如果没有类型标识，使用默认值
+                        group_type = "unknown"
+                    # 确保类型以 "-group" 结尾
+                    if not group_type.endswith("-group"):
+                        group_type = f"{group_type}-group"
+                else:
+                    # 不是分组：保持原有类型（可能是API端点等）
+                    group_type = folder_type if folder_type else "api"
+
                 group_info = {
                     'id': node_info.get('id'),
                     'name': node_info.get('name'),
-                    'type': folder_type,
+                    'type': group_type,
                     'parentId': node_info.get('parentId'),
                     'path': node_info.get('path'),
                     'method': node_info.get('method')

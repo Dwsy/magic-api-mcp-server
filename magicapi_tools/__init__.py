@@ -1,6 +1,7 @@
 """MagicAPI 工具集合模块。"""
 
 from magicapi_mcp.settings import MagicAPISettings, DEFAULT_SETTINGS
+from magicapi_tools.logging_config import get_logger
 from magicapi_tools.utils import error_response
 from magicapi_tools.utils.http_client import MagicAPIHTTPClient
 from magicapi_tools.utils.resource_manager import MagicAPIResourceManager, MagicAPIResourceTools
@@ -49,6 +50,7 @@ __all__ = [
     "_flatten_tree",
     "_filter_nodes",
     "_nodes_to_csv",
+    "get_logger",
 ]
 
 

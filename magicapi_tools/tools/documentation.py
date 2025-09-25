@@ -27,7 +27,12 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Annotated, Any, Dict, List, Literal, Optional
+from typing import TYPE_CHECKING, Annotated, Any, Dict, List, Optional
+
+try:
+    from typing import Literal
+except ImportError:
+    from typing_extensions import Literal
 
 from pydantic import Field
 
@@ -107,7 +112,7 @@ class DocumentationTools:
                 Field(description="要查询的语法主题，如'variables'、'loops'、'functions'等；使用'full'获取完整语法规则", min_length=1)
             ],
             locale: Annotated[
-                Literal["zh-CN", "en-US"],
+                str,
                 Field(description="文档语言选择", default="zh-CN")
             ] = "zh-CN"
         ) -> Dict[str, Any]:
@@ -137,7 +142,7 @@ class DocumentationTools:
             }
         )
         def get_full_syntax(locale: Annotated[
-            Literal["zh-CN", "en-US"],
+            str,
             Field(description="文档语言选择", default="zh-CN")
         ] = "zh-CN") -> Dict[str, Any]:
             """强制获取完整的Magic-Script语法规则。

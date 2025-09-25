@@ -25,10 +25,14 @@ from pydantic import Field
 
 from magicapi_tools.utils.extractor import extract_api_endpoints, load_resource_tree
 from magicapi_tools.utils.extractor import filter_endpoints, _clean_path
+from magicapi_tools.logging_config import get_logger
 from magicapi_tools.tools.common import (
     error_response,
     path_to_id_impl,
 )
+
+# 获取查询工具的logger
+logger = get_logger('tools.query')
 
 if TYPE_CHECKING:
     from fastmcp import FastMCP
@@ -172,8 +176,14 @@ class QueryTools:
         ) -> Dict[str, Any]:
             ok, payload = context.http_client.api_detail(file_id)
             if not ok:
+                logger.error(f"查询API详情失败: {payload.get('message', '无法获取接口详情')}")
+                logger.error(f"  API ID: {file_id}")
+                logger.debug(f"  错误详情: {payload}")
                 return error_response(payload.get("code"), payload.get("message", "无法获取接口详情"), payload.get("detail"))
+
             if payload is None:
+                logger.warning(f"API详情数据为空: {file_id}")
+                logger.debug(f"  原始响应: {payload}")
                 return error_response("no_data", f"接口 {file_id} 的详情数据为空")
 
             # 获取基础信息

@@ -19,11 +19,15 @@ from typing import TYPE_CHECKING, Annotated, Any, Dict, List, Optional
 
 from pydantic import Field
 
+from magicapi_tools.logging_config import get_logger
 from magicapi_tools.tools.common import error_response
 
 if TYPE_CHECKING:
     from fastmcp import FastMCP
     from magicapi_mcp.tool_registry import ToolContext
+
+# 获取搜索工具的logger
+logger = get_logger('tools.search')
 
 
 class SearchTools:

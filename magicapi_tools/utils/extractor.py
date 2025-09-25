@@ -223,17 +223,50 @@ def _flatten_tree(
             node_type = node_info.get("type")
             method = node_info.get("method")
             path = node_info.get("path")
+            full_path = node_info.get("full_path", path)  # 优先使用full_path
             name = node_info.get("name")
             file_id = node_info.get("id")
 
+            # 确定节点类型：优先使用原始类型，但要根据是否有子节点调整为分组类型
+            has_children = child.get("children") and len(child["children"]) > 0
+
+            if has_children:
+                # 有子节点的一定是分组
+                final_type = f"{folder_type}-group" if folder_type else "unknown-group"
+            elif node_type:
+                # 有原始类型但没有子节点，使用原始类型
+                final_type = node_type
+            elif method:
+                # 有method的是API端点
+                final_type = "api"
+            else:
+                # 既没有type也没有method也没有子节点
+                final_type = folder_type or "unknown"
+
             entry = {
                 "name": name,
-                "type": node_type or ("api" if method else None),
-                "path": path,
+                "type": final_type,
+                "path": full_path,  # 使用完整路径
                 "method": method,
                 "id": file_id,
+                "original_path": path,  # 保留原始路径以备后用
             }
-            if entry["type"] in allowed_types or (method and "api" in allowed_types):
+            # 过滤逻辑：检查节点是否应该被包含
+            should_include = False
+            if allowed_types == ["all"]:
+                should_include = True
+            elif entry["type"] in allowed_types:
+                should_include = True
+            elif method and "api" in allowed_types:
+                should_include = True
+
+            # 特殊规则：如果节点既没有method也没有子节点，则不包含（除非它是分组）
+            if should_include and not method:
+                has_children = child.get("children") and len(child["children"]) > 0
+                if not has_children:
+                    should_include = False
+
+            if should_include:
                 nodes.append(entry)
 
             child_children = child.get("children", [])
@@ -276,12 +309,16 @@ def _nodes_to_csv(nodes: List[Dict[str, Any]]) -> str:
     """将节点列表转换为CSV格式。"""
     if not nodes:
         return ""
-    headers = ["name", "path", "method", "type", "id"]
+    headers = ["name", "path", "method", "type", "id", "full_path"]
     rows = [",".join(headers)]
     for node in nodes:
         row = []
         for key in headers:
-            value = node.get(key)
+            if key == "full_path":
+                # full_path是新加的字段，可能不存在，使用path作为后备
+                value = node.get(key, node.get("path"))
+            else:
+                value = node.get(key)
             text = "" if value is None else str(value)
             if "," in text or '"' in text:
                 text = '"' + text.replace('"', '""') + '"'
