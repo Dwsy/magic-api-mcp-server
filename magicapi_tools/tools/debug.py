@@ -24,7 +24,7 @@ from __future__ import annotations
 
 import asyncio
 import json
-from typing import TYPE_CHECKING, Annotated, Any, Dict, List, Optional
+from typing import TYPE_CHECKING, Annotated, Any, Dict, List, Optional, Union
 
 from pydantic import Field
 
@@ -95,19 +95,27 @@ class DebugTools:
                 Field(description="HTTP请求方法，如'GET'、'POST'、'PUT'、'DELETE'等")
             ] = "GET",
             data: Annotated[
-                Optional[Any],
+                Optional[Union[Any, str]],
                 Field(description="请求体数据，适用于POST/PUT等方法")
             ] = None,
             params: Annotated[
-                Optional[Any],
+                Optional[Union[Any, str]],
                 Field(description="URL查询参数")
             ] = None,
             breakpoints: Annotated[
-                Optional[List[int]],
+                Optional[Union[List[int], str]],
                 Field(description="断点行号列表，用于调试，如'[5,10,15]'")
             ] = [5,6,7],
             ctx: "Context" = None,
         ) -> Dict[str, Any]:
+            # 参数清理：将空字符串转换为 None
+            if isinstance(data, str) and data.strip() == "":
+                data = None
+            if isinstance(params, str) and params.strip() == "":
+                params = None
+            if isinstance(breakpoints, str) and breakpoints.strip() == "":
+                breakpoints = None
+
             observer = MCPObserver(ctx) if ctx else None
             if observer:
                 context.ws_manager.add_observer(observer)
