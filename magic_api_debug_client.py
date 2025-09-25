@@ -218,7 +218,7 @@ class MagicAPIDebugClient:
 
     async def login(self):
         """发送登录消息"""
-        login_message = f"login,{self.username or 'guest'},{self.client_id}"
+        login_message = f"login,{self.username or 'unauthorization'},{self.client_id}"
         await self.websocket.send(login_message)
         print(f"📤 已发送登录消息: {login_message}")
 
@@ -484,6 +484,7 @@ class MagicAPIDebugClient:
             print(f"🐛 进入调试模式，断点: {breakpoints}")
             # 设置断点信息，通过HTTP请求头发送
             headers["Magic-Request-Breakpoints"] = ",".join(map(str, breakpoints))
+            headers.setdefault("magic-request-breakpoints", headers["Magic-Request-Breakpoints"])
             print(f"🔴 发送断点信息: {headers['Magic-Request-Breakpoints']}")
 
         print(f"🐛 调用API (调试模式): {method} {url}")

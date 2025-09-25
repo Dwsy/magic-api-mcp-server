@@ -64,7 +64,7 @@ class MagicAPIWebSocketClient:
     async def login(self):
         """发送登录消息"""
         # 构建登录消息，基于 MagicWorkbenchHandler.onLogin 的实现
-        login_message = f"login,{self.username or 'guest'},{self.client_id}"
+        login_message = f"login,{self.username or 'unauthorization'},{self.client_id}"
         await self.websocket.send(login_message)
 
 
