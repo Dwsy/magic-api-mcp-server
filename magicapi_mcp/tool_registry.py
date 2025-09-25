@@ -5,9 +5,11 @@ from __future__ import annotations
 from typing import Any, List, Optional, Protocol
 
 from magicapi_mcp.settings import MagicAPISettings
+from magicapi_tools.logging_config import get_logger
 from magicapi_tools.utils.http_client import MagicAPIHTTPClient
 from magicapi_tools.utils.resource_manager import MagicAPIResourceManager, MagicAPIResourceTools
-from magicapi_tools.utils.ws import MagicAPIDebugClient, MagicAPIDebugTools
+from magicapi_tools.ws.debug_service import WebSocketDebugService
+from magicapi_tools.ws.manager import WSManager
 
 
 class ToolContext:
@@ -23,13 +25,16 @@ class ToolContext:
             http_client=self.http_client,
         )
         self.resource_tools = MagicAPIResourceTools(self.resource_manager)
-        self.debug_client = MagicAPIDebugClient(
-            settings.ws_url,
-            settings.base_url,
-            settings.username if settings.auth_enabled else None,
-            settings.password if settings.auth_enabled else None,
-        )
-        self.debug_tools = MagicAPIDebugTools(self.debug_client)
+        self.ws_manager = WSManager(settings, self.resource_manager)
+        self.ws_debug_service = WebSocketDebugService(self.ws_manager, self.http_client)
+        # 兼容旧属性命名
+        self.debug_tools = self.ws_debug_service
+
+        # 启动 WebSocket 监听（如配置允许），确保工具可立即使用
+        try:
+            self.ws_manager.ensure_running_sync()
+        except Exception as exc:  # pragma: no cover - 启动失败仅记录
+            get_logger('tool_registry').warning(f"WSManager 自动启动失败: {exc}")
 
 
 class ToolModule(Protocol):
