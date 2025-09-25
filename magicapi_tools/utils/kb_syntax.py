@@ -977,7 +977,7 @@ SYNTAX_KNOWLEDGE: Dict[str, Dict[str, Any]] = {
                 {
                     "level": "warning",
                     "title": "循环语法差异",
-                    "content": "使用 `for (i in range(start, end))` 而不是 JS 的 for 循环。变量声明推荐 `let` 而非 `var`。"
+                    "content": "Magic-Script 仅支持两种 for 循环：\n1. for(index, item in collection) - 遍历集合（可省略 index）\n2. for(i in range(start, end)) - 数值范围循环\n\n⚠️ 不支持 JS 的 for (init; condition; increment) 语法\n✅ 推荐使用 let 而非 var 声明变量"
                 },
                 {
                     "level": "warning",
