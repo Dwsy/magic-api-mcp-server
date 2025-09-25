@@ -142,7 +142,7 @@ class MagicAPIHTTPClient:
             # 为资源树添加完整路径信息
             data_with_paths = self._build_full_paths(data)
 
-            logger.info(f"获取资源树成功: {len(data)} 个顶级分类，已添加全路径信息")
+
             return True, data_with_paths
 
         except requests.RequestException as exc:
