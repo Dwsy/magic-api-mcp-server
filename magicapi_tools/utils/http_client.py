@@ -234,6 +234,7 @@ class MagicAPIHTTPClient:
         params: Optional[Mapping[str, Any]] = None,
         data: Optional[Any] = None,
         headers: Optional[Mapping[str, str]] = None,
+        timeout: Optional[float] = None,
     ) -> tuple[bool, Any]:
         method = method.upper()
         if not path.startswith("/"):
@@ -252,20 +253,33 @@ class MagicAPIHTTPClient:
             else:
                 logger.debug(f"  请求体: ({len(str(data))} 字符)")
 
-        request_headers: MutableMapping[str, str] = {
-            "X-MAGIC-CLIENT-ID": self.client_id,
-            "X-MAGIC-SCRIPT-ID": uuid.uuid4().hex,
-        }
-        if headers:
-            request_headers.update(headers)
+        provided_headers = dict(headers or {})
+        request_headers: MutableMapping[str, str] = {}
+        request_headers["Magic-Request-Client-Id"] = provided_headers.get("Magic-Request-Client-Id", self.client_id)
+        request_headers["Magic-Request-Script-Id"] = provided_headers.get("Magic-Request-Script-Id", uuid.uuid4().hex)
+        request_headers["Magic-Request-Breakpoints"] = provided_headers.get("Magic-Request-Breakpoints", "")
+
+        # 兼容旧头信息
+        if "X-MAGIC-CLIENT-ID" in provided_headers:
+            request_headers["X-MAGIC-CLIENT-ID"] = provided_headers["X-MAGIC-CLIENT-ID"]
+        if "X-MAGIC-SCRIPT-ID" in provided_headers:
+            request_headers["X-MAGIC-SCRIPT-ID"] = provided_headers["X-MAGIC-SCRIPT-ID"]
+
+        for key, value in provided_headers.items():
+            if key not in request_headers:
+                request_headers[key] = value
+
         self.settings.inject_auth(request_headers)
+        request_headers.setdefault("Magic-Token", self.settings.token or "unauthorization")
+        if "Magic-Request-Breakpoints" in request_headers:
+            request_headers.setdefault("magic-request-breakpoints", request_headers["Magic-Request-Breakpoints"])
 
         logger.debug(f"  请求头: {dict(request_headers)}")
 
         request_kwargs: dict[str, Any] = {
             "params": params,
             "headers": request_headers,
-            "timeout": self.settings.timeout_seconds,
+            "timeout": timeout or self.settings.timeout_seconds,
         }
 
         if isinstance(data, (dict, list)):
@@ -291,15 +305,21 @@ class MagicAPIHTTPClient:
                 body = response.text
                 logger.debug(f"  响应体: {body[:200]}...")
 
-            if response.status_code >= 400:
+            success = response.status_code < 400
+            if not success:
                 logger.error(f"API调用失败: HTTP {response.status_code}")
                 logger.error(f"  响应体: {body}")
 
-            return True, {
+            result = {
                 "status": response.status_code,
                 "headers": dict(response.headers),
                 "body": body,
             }
+            if not success:
+                result.setdefault("code", response.status_code)
+                result.setdefault("message", f"HTTP {response.status_code}")
+
+            return success, result
         except requests.RequestException as exc:
             logger.error(f"API调用网络异常: {exc}")
             logger.error(f"  请求: {method} {url}")
