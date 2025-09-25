@@ -22,7 +22,7 @@
 """
 
 from __future__ import annotations
-from typing import TYPE_CHECKING, Annotated, Any, Dict, List, Optional
+from typing import TYPE_CHECKING, Annotated, Any, Dict, List, Optional, Union
 
 try:
     from typing import Literal
@@ -76,9 +76,13 @@ class ResourceManagementTools:
             ] = "tree",
 
             depth: Annotated[
-                Optional[int],
-                Field(description="限制显示的资源树深度，正整数", ge=1, le=10)
+                Optional[Union[int, str]],
+                Field(description="限制显示的资源树深度，正整数")
             ] = None,
+            group_id: Annotated[
+                Optional[Union[str, int]],
+                Field(description="分组ID，用于只获取指定分组下的子树，默认为'0'表示根节点")
+            ] = "0",
             method_filter: Annotated[
                 Optional[str],
                 Field(description="HTTP方法过滤器，如'GET'、'POST'、'PUT'、'DELETE'")
@@ -99,6 +103,40 @@ class ResourceManagementTools:
             """获取 Magic-API 资源树。"""
 
             try:
+                # 参数清理：将空字符串转换为 None
+                if isinstance(depth, str) and depth.strip() == "":
+                    depth = None
+                elif isinstance(depth, str):
+                    try:
+                        depth = int(depth)
+                        # 确保 depth 在有效范围内
+                        if depth < 1 or depth > 10:
+                            depth = None
+                    except ValueError:
+                        depth = None
+
+                # 清理字符串过滤器参数
+                if isinstance(method_filter, str) and method_filter.strip() == "":
+                    method_filter = None
+                if isinstance(path_filter, str) and path_filter.strip() == "":
+                    path_filter = None
+                if isinstance(name_filter, str) and name_filter.strip() == "":
+                    name_filter = None
+                if isinstance(query_filter, str) and query_filter.strip() == "":
+                    query_filter = None
+
+                # 处理 group_id 参数
+                group_id_str = None
+                if group_id is not None:
+                    if isinstance(group_id, str) and group_id.strip() == "":
+                        group_id_str = None
+                    elif isinstance(group_id, str):
+                        group_id_str = group_id.strip()
+                    elif isinstance(group_id, int):
+                        group_id_str = str(group_id)
+                    else:
+                        group_id_str = None
+
                 # 获取资源树数据
                 ok, payload = context.http_client.resource_tree()
                 if not ok:
@@ -113,6 +151,28 @@ class ResourceManagementTools:
                 # 根据format参数返回不同格式
                 if format == "tree":
                     # 返回树形结构
+
+                    def find_group_subtree(node: Dict[str, Any], target_group_id: str) -> Dict[str, Any]:
+                        """递归查找指定分组ID的子树"""
+                        if not node:
+                            return None
+
+                        # 检查当前节点是否匹配分组ID
+                        if "node" in node:
+                            node_info = node["node"]
+                            current_id = node_info.get("id")
+                            if current_id == target_group_id:
+                                return node
+
+                        # 递归查找子节点
+                        if "children" in node:
+                            for child in node["children"]:
+                                result = find_group_subtree(child, target_group_id)
+                                if result:
+                                    return result
+
+                        return None
+
                     def filter_tree_node(node: Dict[str, Any]) -> Dict[str, Any]:
                         """过滤树节点"""
                         node_copy = dict(node)
@@ -133,6 +193,8 @@ class ResourceManagementTools:
 
                             # 检查是否应该包含此节点
                             should_include = True
+
+                            # 类型过滤
                             if allowed != ["all"]:
                                 if node_type and node_type not in allowed:
                                     should_include = False
@@ -143,6 +205,34 @@ class ResourceManagementTools:
                                     if node_name == "root" or ("children" in node_copy and node_copy["children"]):
                                         should_include = True
                                     else:
+                                        should_include = False
+
+                            # 高级过滤器：name_filter, path_filter, method_filter, query_filter
+                            if should_include and (name_filter or path_filter or method_filter or query_filter):
+                                node_path = node_info.get("path", "")
+                                node_method = node_info.get("method", "")
+
+                                # name_filter：名称过滤
+                                if name_filter and node_name:
+                                    if name_filter.lower() not in node_name.lower():
+                                        should_include = False
+
+                                # path_filter：路径过滤
+                                if should_include and path_filter and node_path:
+                                    if path_filter.lower() not in node_path.lower():
+                                        should_include = False
+
+                                # method_filter：方法过滤
+                                if should_include and method_filter and node_method:
+                                    if method_filter.upper() != node_method.upper():
+                                        should_include = False
+
+                                # query_filter：通用查询过滤
+                                if should_include and query_filter:
+                                    # 检查是否在任何相关字段中包含查询关键词
+                                    searchable_text = f"{node_name} {node_path} {node_method} {node_type or ''}".strip().lower()
+                                    query_lower = query_filter.lower()
+                                    if query_lower not in searchable_text:
                                         should_include = False
 
                             if not should_include:
@@ -178,6 +268,10 @@ class ResourceManagementTools:
                     # 获取指定类型的树
                     tree_data = payload.get(kind_normalized, {})
                     if kind_normalized != "all":
+                        # 如果指定了分组ID，先找到对应的子树
+                        if group_id_str and group_id_str != "0":
+                            tree_data = find_group_subtree(tree_data, group_id_str) or {"node": {}, "children": []}
+
                         filtered_tree = filter_tree_node(tree_data)
                         result_tree = filtered_tree if filtered_tree else {
                             "node": {}, "children": []}
@@ -186,13 +280,19 @@ class ResourceManagementTools:
                         result_tree = {}
                         for tree_type in ["api", "function", "task", "datasource"]:
                             if tree_type in payload:
-                                filtered = filter_tree_node(payload[tree_type])
+                                type_tree_data = payload[tree_type]
+                                # 如果指定了分组ID，先找到对应的子树
+                                if group_id_str and group_id_str != "0":
+                                    type_tree_data = find_group_subtree(type_tree_data, group_id_str) or {"node": {}, "children": []}
+
+                                filtered = filter_tree_node(type_tree_data)
                                 if filtered:
                                     result_tree[tree_type] = filtered
 
                     return {
                         "format": "tree",
                         "kind": kind_normalized,
+                        "group_id": group_id_str,
                         "tree": result_tree,
                         "filters_applied": {
                             "method": method_filter,
@@ -200,12 +300,21 @@ class ResourceManagementTools:
                             "name": name_filter,
                             "query": query_filter,
                             "depth": depth,
+                            "group_id": group_id_str,
                         }
                     }
 
                 else:
                     # json 或 csv 格式：使用扁平化结构
-                    nodes = _flatten_tree(payload, allowed, depth)
+                    # 如果指定了分组ID，先过滤树结构
+                    filtered_payload = payload.copy()
+                    if group_id_str and group_id_str != "0":
+                        for tree_type in ["api", "function", "task", "datasource"]:
+                            if tree_type in filtered_payload:
+                                subtree = find_group_subtree(filtered_payload[tree_type], group_id_str)
+                                filtered_payload[tree_type] = subtree if subtree else {"node": {}, "children": []}
+
+                    nodes = _flatten_tree(filtered_payload, allowed, depth)
 
                     # 如果有高级过滤器，转换为端点列表进行过滤
                     if method_filter or path_filter or name_filter or query_filter:
@@ -259,6 +368,7 @@ class ResourceManagementTools:
                         return {
                             "format": "json",
                             "kind": kind_normalized,
+                            "group_id": group_id_str,
                             "count": len(nodes),
                             "nodes": nodes,
                             "filters_applied": {
@@ -267,6 +377,7 @@ class ResourceManagementTools:
                                 "name": name_filter,
                                 "query": query_filter,
                                 "depth": depth,
+                                "group_id": group_id_str,
                             }
                         }
                     elif format == "csv":
@@ -274,6 +385,7 @@ class ResourceManagementTools:
                         return {
                             "format": "csv",
                             "kind": kind_normalized,
+                            "group_id": group_id_str,
                             "count": len(nodes),
                             "csv": _nodes_to_csv(nodes),
                             "filters_applied": {
@@ -282,6 +394,7 @@ class ResourceManagementTools:
                                 "name": name_filter,
                                 "query": query_filter,
                                 "depth": depth,
+                                "group_id": group_id_str,
                             }
                         }
 
@@ -336,7 +449,7 @@ class ResourceManagementTools:
             - 创建操作：需要提供 name 等必需参数，不提供 id
             - 更新操作：只需要提供 id，其他参数都是可选的，只更新提供的参数
             """
-            if id == "null":
+            if id == "null" or id == "":
                 id = None
 
             import json
@@ -455,7 +568,7 @@ class ResourceManagementTools:
             - 创建操作：需要提供 group_id, name, method, path, script 等必需参数
             - 更新操作：只需要提供 id，其他参数都是可选的，只更新提供的参数
             """
-            if id == "null":
+            if id == "null" or id == "":
                 id = None
 
             # MCP工具调用日志
