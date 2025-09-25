@@ -75,7 +75,7 @@ class MagicAPIResourceTools:
         name: Optional[str] = None,
         id: Optional[str] = None,
         parent_id: str = "0",
-        group_type: str = "api",
+        type: str = "api",
         path: Optional[str] = None,
         options: Optional[str] = None,
         groups_data: Optional[List[Dict[str, Any]]] = None,
@@ -87,7 +87,7 @@ class MagicAPIResourceTools:
             name: 分组名称（创建时必需）
             id: 分组ID（更新时必需）
             parent_id: 父分组ID
-            group_type: 分组类型
+            type: 分组类型
             path: 分组路径
             options: 选项配置JSON字符串
             groups_data: 分组数据列表（批量操作）
@@ -99,14 +99,14 @@ class MagicAPIResourceTools:
         if groups_data is not None:
             return self._batch_save_groups(groups_data)
         else:
-            return self._save_single_group(name, id, parent_id, group_type, path, options)
+            return self._save_single_group(name, id, parent_id, type, path, options)
 
     def _save_single_group(
         self,
         name: Optional[str] = None,
         id: Optional[str] = None,
         parent_id: str = "0",
-        group_type: str = "api",
+        type: str = "api",
         path: Optional[str] = None,
         options: Optional[str] = None,
     ) -> Dict[str, Any]:
@@ -122,7 +122,7 @@ class MagicAPIResourceTools:
             name=name,
             id=id,
             parent_id=parent_id,
-            group_type=group_type,
+            type=type,
             path=path,
             options=options_dict,
         )
@@ -141,7 +141,7 @@ class MagicAPIResourceTools:
                     name=group_data.get("name"),
                     id=group_data.get("id"),
                     parent_id=group_data.get("parent_id", "0"),
-                    group_type=group_data.get("group_type", "api"),
+                    type=group_data.get("type", "api"),
                     path=group_data.get("path"),
                     options=group_data.get("options")
                 )
@@ -754,7 +754,7 @@ class MagicAPIResourceManager:
             print(f"❌ 登录失败: {response.text}")
 
     def save_group(self, name: Optional[str] = None, id: Optional[str] = None,
-                   parent_id: str = "0", group_type: str = "api",
+                   parent_id: str = "0", type: str = "api",
                    path: Optional[str] = None, options: Optional[Dict] = None) -> Optional[str]:
         """
         保存分组目录（支持创建和更新操作）
@@ -768,26 +768,18 @@ class MagicAPIResourceManager:
             name: 分组名称（创建时必需）
             id: 分组ID（更新时必需）
             parent_id: 父分组ID，默认为根目录"0"
-            group_type: 分组类型，默认为"api"
+            type: 分组类型，默认为"api"
             path: 分组路径
             options: 选项配置
 
         Returns:
             保存成功返回分组ID，失败返回None
         """
-        # 处理分组类型标识
-        processed_group_type = group_type
-        if not processed_group_type:
-            # 如果没有类型标识，使用默认值
-            processed_group_type = "unknown"
-        # 确保类型以 "-group" 结尾
-        if not processed_group_type.endswith("-group"):
-            processed_group_type = f"{processed_group_type}-group"
-
+        
         # 构建请求数据
         group_data = {
             "parentId": parent_id,
-            "type": processed_group_type
+            "type": type
         }
 
         # 添加必需字段

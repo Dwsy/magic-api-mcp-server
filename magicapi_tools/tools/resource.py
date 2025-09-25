@@ -67,7 +67,8 @@ class ResourceManagementTools:
         def resource_tree(
             kind: Annotated[
                 str,
-                Field(description="资源类型过滤器：api（API接口）、function（函数）、task（任务）、datasource（数据源）或all（全部）")
+                Field(
+                    description="资源类型过滤器：api（API接口）、function（函数）、task（任务）、datasource（数据源）或all（全部）")
             ] = "api",
             format: Annotated[
                 str,
@@ -104,8 +105,10 @@ class ResourceManagementTools:
                     return error_response(payload.get("code"), payload.get("message", "无法获取资源树"), payload.get("detail"))
 
                 # 过滤资源类型
-                kind_normalized = kind if kind in {"api", "function", "task", "datasource", "all"} else "api"
-                allowed = [kind_normalized] if kind_normalized != "all" else ["all"]
+                kind_normalized = kind if kind in {
+                    "api", "function", "task", "datasource", "all"} else "api"
+                allowed = [
+                    kind_normalized] if kind_normalized != "all" else ["all"]
 
                 # 根据format参数返回不同格式
                 if format == "tree":
@@ -156,7 +159,8 @@ class ResourceManagementTools:
                                     else:
                                         for child in children:
                                             if "children" in child:
-                                                limit_depth(child["children"], current_depth + 1)
+                                                limit_depth(
+                                                    child["children"], current_depth + 1)
 
                                 limit_depth(node_copy["children"], 0)
 
@@ -175,7 +179,8 @@ class ResourceManagementTools:
                     tree_data = payload.get(kind_normalized, {})
                     if kind_normalized != "all":
                         filtered_tree = filter_tree_node(tree_data)
-                        result_tree = filtered_tree if filtered_tree else {"node": {}, "children": []}
+                        result_tree = filtered_tree if filtered_tree else {
+                            "node": {}, "children": []}
                     else:
                         # 对于"all"，需要处理所有类型的树
                         result_tree = {}
@@ -193,7 +198,7 @@ class ResourceManagementTools:
                             "method": method_filter,
                             "path": path_filter,
                             "name": name_filter,
-                            "query": query_filter ,
+                            "query": query_filter,
                             "depth": depth,
                         }
                     }
@@ -240,7 +245,7 @@ class ResourceManagementTools:
                             for original_node in nodes:
                                 if (original_node.get("method") == method and
                                     original_node.get("path") == path and
-                                    original_node.get("name") == name):
+                                        original_node.get("name") == name):
                                     filtered_nodes.append(original_node)
                                     break
 
@@ -275,7 +280,7 @@ class ResourceManagementTools:
                                 "method": method_filter,
                                 "path": path_filter,
                                 "name": name_filter,
-                                "query": query_filter ,
+                                "query": query_filter,
                                 "depth": depth,
                             }
                         }
@@ -288,7 +293,8 @@ class ResourceManagementTools:
         @mcp_app.tool(
             name="save_group",
             description="保存资源分组，支持单个分组创建或更新，包含完整的分组配置选项。",
-            tags={"resource", "group", "save", "create", "update", "management", "full-config"},
+            tags={"resource", "group", "save", "create",
+                  "update", "management", "full-config"},
             meta={"version": "2.1", "category": "resource-management"}
         )
         def save_group(
@@ -296,20 +302,21 @@ class ResourceManagementTools:
             name: Annotated[
                 Optional[str],
                 Field(description="分组名称（创建新分组时必需）")
-            ] = None,
+            ],
+            parent_id: Annotated[
+                str,
+                Field(description="父分组ID (必须提供)")
+            ],
             # 更新操作必需参数
             id: Annotated[
                 Optional[str],
                 Field(description="分组ID（更新现有分组时必需），用于标识要更新的分组")
             ] = None,
             # 通用参数
-            parent_id: Annotated[
+            type: Annotated[
                 str,
-                Field(description="父分组ID，根分组使用'0'")
-            ] = "0",
-            group_type: Annotated[
-                str,
-                Field(description="分组类型：api（API接口组）、function（函数组）、task（任务组）、datasource（数据源组）")
+                Field(
+                    description="分组类型：api（API接口组）、function（函数组）、task（任务组）、datasource（数据源组）")
             ] = "api",
             path: Annotated[
                 Optional[str],
@@ -356,7 +363,7 @@ class ResourceManagementTools:
                 name=name,
                 id=id,
                 parent_id=parent_id,
-                group_type=group_type,
+                type=type,
                 path=path,
                 options=options,
                 groups_data=groups_list,
@@ -374,7 +381,8 @@ class ResourceManagementTools:
         @mcp_app.tool(
             name="save_api_endpoint",
             description="保存API接口，支持单个接口创建或更新，包含完整的API配置选项。",
-            tags={"api", "endpoint", "save", "create", "update", "management", "full-config"},
+            tags={"api", "endpoint", "save", "create",
+                  "update", "management", "full-config"},
             meta={"version": "2.2", "category": "resource-management"}
         )
         def save_api_endpoint(
@@ -382,15 +390,15 @@ class ResourceManagementTools:
             group_id: Annotated[
                 Optional[str],
                 Field(description="分组ID（创建新API时必需），指定API所属的分组")
-            ] ,
+            ],
             name: Annotated[
                 Optional[str],
                 Field(description="API接口名称（创建新API时必需）")
-            ] ,
+            ],
             method: Annotated[
                 Optional[str],
                 Field(description="HTTP请求方法（创建新API时必需），默认为GET")
-            ] ,
+            ],
             path: Annotated[
                 Optional[str],
                 Field(description="API路径，如'/api/users'（创建新API时必需）")
@@ -398,7 +406,7 @@ class ResourceManagementTools:
             script: Annotated[
                 Optional[str],
                 Field(description="API执行脚本，Magic-Script代码（创建新API时必需）")
-            ] ,
+            ],
             # 更新操作必需参数
             id: Annotated[
                 Optional[str],
@@ -461,10 +469,9 @@ class ResourceManagementTools:
             if description:
                 logger.debug(f"  描述: {description[:100]}...")
             if script:
-                logger.debug(f"  脚本长度: {len(script)} 字符")     
+                logger.debug(f"  脚本长度: {len(script)} 字符")
 
             import json
-
 
             is_update = id is not None
 
@@ -481,7 +488,8 @@ class ResourceManagementTools:
                     "path": path,
                     "script": script
                 }
-                missing_fields = [k for k, v in required_fields.items() if v is None]
+                missing_fields = [
+                    k for k, v in required_fields.items() if v is None]
                 if missing_fields:
                     return error_response("invalid_params", f"创建操作需要提供以下必需参数: {', '.join(missing_fields)}")
 
@@ -521,14 +529,16 @@ class ResourceManagementTools:
             parsed_request_body_definition = None
             if request_body_definition:
                 try:
-                    parsed_request_body_definition = json.loads(request_body_definition)
+                    parsed_request_body_definition = json.loads(
+                        request_body_definition)
                 except json.JSONDecodeError:
                     return error_response("invalid_json", f"request_body_definition 格式错误: {request_body_definition}")
 
             parsed_response_body_definition = None
             if response_body_definition:
                 try:
-                    parsed_response_body_definition = json.loads(response_body_definition)
+                    parsed_response_body_definition = json.loads(
+                        response_body_definition)
                 except json.JSONDecodeError:
                     return error_response("invalid_json", f"response_body_definition 格式错误: {response_body_definition}")
 
@@ -555,7 +565,8 @@ class ResourceManagementTools:
                 # 记录详细的原始错误信息
                 error_info = result.get("error", {})
                 operation_type = "更新" if id else "创建"
-                logger.error(f"{operation_type}API失败: {error_info.get('message', '未知错误')}")
+                logger.error(
+                    f"{operation_type}API失败: {error_info.get('message', '未知错误')}")
                 logger.error(f"  API ID: {id if id else 'N/A'}")
                 logger.error(f"  API名称: {name}")
                 logger.error(f"  API路径: {path}")
@@ -589,7 +600,8 @@ class ResourceManagementTools:
                     return error_response("invalid_params", "src_id和target_id不能为空")
 
                 # 调用工具方法，获取结构化的错误信息
-                result = context.resource_tools.copy_resource_tool(clean_src_id, clean_target_id)
+                result = context.resource_tools.copy_resource_tool(
+                    clean_src_id, clean_target_id)
                 if "success" in result:
                     return result
                 else:
@@ -620,7 +632,8 @@ class ResourceManagementTools:
                     return error_response("invalid_params", "src_id和target_id不能为空")
 
                 # 调用工具方法，获取结构化的错误信息
-                result = context.resource_tools.move_resource_tool(clean_src_id, clean_target_id)
+                result = context.resource_tools.move_resource_tool(
+                    clean_src_id, clean_target_id)
                 if "success" in result:
                     return result
                 else:
@@ -646,7 +659,8 @@ class ResourceManagementTools:
             ] = None,
             resource_ids: Annotated[
                 Optional[str],
-                Field(description="资源ID列表，JSON数组格式如['id1','id2','id3']（批量删除操作时使用）")
+                Field(
+                    description="资源ID列表，JSON数组格式如['id1','id2','id3']（批量删除操作时使用）")
             ] = None,
         ) -> Dict[str, Any]:
             """删除资源（支持单个和批量操作）。"""
@@ -662,7 +676,8 @@ class ResourceManagementTools:
                         return error_response("invalid_json", f"resource_ids 格式错误: {resource_ids}")
 
                     # 调用工具方法进行批量删除
-                    result = context.resource_tools.delete_resource_tool(resource_ids=ids_list)
+                    result = context.resource_tools.delete_resource_tool(
+                        resource_ids=ids_list)
                     if "success" in result:
                         return result
                     else:
@@ -681,14 +696,16 @@ class ResourceManagementTools:
                         return error_response("invalid_params", "resource_id不能为空")
 
                     # 调用工具方法进行单个删除
-                    result = context.resource_tools.delete_resource_tool(resource_id=clean_resource_id)
+                    result = context.resource_tools.delete_resource_tool(
+                        resource_id=clean_resource_id)
                     if "success" in result:
                         return result
                     else:
                         error_info = result.get("error", {})
                         return error_response(
                             error_info.get("code", "delete_failed"),
-                            error_info.get("message", f"删除资源 {clean_resource_id} 失败"),
+                            error_info.get(
+                                "message", f"删除资源 {clean_resource_id} 失败"),
                             result  # 包含完整的原始错误信息
                         )
 
@@ -769,7 +786,8 @@ class ResourceManagementTools:
         def export_resource_tree(kind: str = "api", format: str = "json") -> Dict[str, Any]:
             """导出资源树。"""
             try:
-                result = context.resource_tools.export_resource_tree_tool(kind=kind, format=format)
+                result = context.resource_tools.export_resource_tree_tool(
+                    kind=kind, format=format)
                 if "success" in result:
                     return result
                 else:
@@ -811,7 +829,8 @@ class ResourceManagementTools:
 
                 if action == "read":
                     # 读取锁定状态 - 使用 GET /resource/file/{id} 接口
-                    ok, payload = context.http_client.api_detail(clean_resource_id)
+                    ok, payload = context.http_client.api_detail(
+                        clean_resource_id)
                     if not ok:
                         return error_response(payload.get("code"), payload.get("message", "无法获取资源信息"), payload.get("detail"))
 
@@ -831,7 +850,8 @@ class ResourceManagementTools:
 
                 elif action == "lock":
                     # 锁定资源
-                    result = context.resource_tools.lock_resource_tool(resource_id=clean_resource_id)
+                    result = context.resource_tools.lock_resource_tool(
+                        resource_id=clean_resource_id)
                     if "success" in result:
                         return {
                             "success": True,
@@ -843,13 +863,15 @@ class ResourceManagementTools:
                         error_info = result.get("error", {})
                         return error_response(
                             error_info.get("code", "lock_failed"),
-                            error_info.get("message", f"锁定资源 {clean_resource_id} 失败"),
+                            error_info.get(
+                                "message", f"锁定资源 {clean_resource_id} 失败"),
                             result  # 包含完整的原始错误信息
                         )
 
                 elif action == "unlock":
                     # 解锁资源
-                    result = context.resource_tools.unlock_resource_tool(resource_id=clean_resource_id)
+                    result = context.resource_tools.unlock_resource_tool(
+                        resource_id=clean_resource_id)
                     if "success" in result:
                         return {
                             "success": True,
@@ -861,7 +883,8 @@ class ResourceManagementTools:
                         error_info = result.get("error", {})
                         return error_response(
                             error_info.get("code", "unlock_failed"),
-                            error_info.get("message", f"解锁资源 {clean_resource_id} 失败"),
+                            error_info.get(
+                                "message", f"解锁资源 {clean_resource_id} 失败"),
                             result  # 包含完整的原始错误信息
                         )
 
@@ -929,7 +952,8 @@ class ResourceManagementTools:
                 ok_detail, payload = context.http_client.api_detail(clean_id)
                 if not ok_detail or not payload:
                     detail_error = payload if isinstance(payload, dict) else {}
-                    print(f"❌ 获取API详情失败: {detail_error.get('message', '无法获取接口详情')}")
+                    print(
+                        f"❌ 获取API详情失败: {detail_error.get('message', '无法获取接口详情')}")
                     print(f"   API ID: {clean_id}")
                     print(f"   操作: 脚本替换")
                     print(f"   HTTP状态: {ok_detail}")
