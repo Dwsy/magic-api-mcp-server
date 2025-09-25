@@ -21,7 +21,7 @@ from __future__ import annotations
 
 import time
 from collections.abc import Mapping, Sequence
-from typing import TYPE_CHECKING, Annotated, Any, Dict, Optional
+from typing import TYPE_CHECKING, Annotated, Any, Dict, Optional, Union
 
 from pydantic import Field
 
@@ -54,29 +54,29 @@ class ApiTools:
                 Field(description="HTTP请求方法，如'GET'、'POST'、'PUT'、'DELETE'等")
             ],
             path: Annotated[
-                Optional[str],
+                Optional[Union[str, None]],
                 Field(description="API请求路径，如'/api/users'或'GET /api/users'")
             ] = None,
             api_id: Annotated[
-                Optional[str],
+                Optional[Union[str, None]],
                 Field(description="可选的接口ID，如果提供则会自动获取对应的method和path，覆盖上面的method和path参数")
             ] = None,
             params: Annotated[
-                Optional[Any],
+                Optional[Union[Any, str]],
                 Field(description="URL查询参数")
             ] = None,
             data: Annotated[
-                Optional[Any],
+                Optional[Union[Any, str]],
                 Field(description="请求体数据，可以是字符串或其他序列化格式")
             ] = None,
             headers: Annotated[
-                Optional[Any],
+                Optional[Union[Any, str]],
                 Field(description="HTTP请求头")
             ] = None,
             include_ws_logs: Annotated[
-                Optional[Dict[str, float]],
+                Optional[Union[Dict[str, float], str]],
                 Field(description="WebSocket日志捕获配置。None表示不捕获，{}表示使用默认值(前0.1秒后0.1秒)，或指定{'pre': 1.0, 'post': 2.5}自定义前后等待时间")
-            ] = {"pre": 0.1, "post": 0.1},
+            ] = {"pre": 0.1, "post": 2.5},
         ) -> Dict[str, Any]:
             """调用 Magic-API 接口并返回请求结果。
 
@@ -84,23 +84,31 @@ class ApiTools:
             1. 直接传入 method 和 path: call_magic_api(method="GET", path="/api/users")
             2. 传入接口ID，会自动转换为完整路径: call_magic_api(api_id="123456")
 
-            注意：method 和 path 参数现在都是可选的，当提供 api_id 时会自动覆盖这两个参数。
+            注意：如果提供了 api_id，系统会优先使用接口ID获取详细信息，完全忽略 method 和 path 参数。
 
             WebSocket日志捕获说明：
             - include_ws_logs=None: 不捕获日志
-            - include_ws_logs={}: 使用默认配置(前1秒，后2.5秒)
-            - include_ws_logs={'pre': 0.5, 'post': 1.0}: 自定义等待时间
+            - include_ws_logs={}: 使用默认配置(前0.1秒，后2.5秒)
+            - include_ws_logs={'pre': 0.5, 'post': 2.5}: 自定义等待时间
             """
 
-            # 检查是否有api_id，如果有则获取详细信息覆盖method和path
-            actual_method = method
-            actual_path = path
-            # 如果两者都为 null 抛出异常
-            if actual_method is None and actual_path is None:
-                return error_response("invalid_method_and_path", "method和path不能同时为空")
+            # 参数清理：将空字符串转换为 None
+            if isinstance(path, str) and path.strip() == "":
+                path = None
+            if isinstance(api_id, str) and api_id.strip() == "":
+                api_id = None
+            if isinstance(params, str) and params.strip() == "":
+                params = None
+            if isinstance(data, str) and data.strip() == "":
+                data = None
+            if isinstance(headers, str) and headers.strip() == "":
+                headers = None
+            if isinstance(include_ws_logs, str) and include_ws_logs.strip() == "":
+                include_ws_logs = {"pre": 0.1, "post": 2.5}
 
+            # 检查是否有api_id，如果有则优先使用ID获取详细信息，忽略path参数
             if api_id:
-                # 传入的是接口ID，先获取详细信息
+                # 传入的是接口ID，先获取详细信息，完全忽略path参数
                 ok, payload = context.http_client.api_detail(api_id)
                 if ok and payload:
                     api_method = payload.get("method", "").upper()
@@ -133,6 +141,13 @@ class ApiTools:
                     logger.error(f"  获取结果: {ok}")
                     logger.debug(f"  错误详情: {payload}")
                     return error_response("id_not_found", f"无法找到接口ID {api_id} 的详细信息")
+            else:
+                # 没有提供api_id，使用method和path参数
+                actual_method = method
+                actual_path = path
+                # 检查method和path是否都为空
+                if actual_method is None and actual_path is None:
+                    return error_response("invalid_method_and_path", "method和path不能同时为空")
 
             actual_method, actual_path = _normalize_method_path(actual_method, actual_path)
             if actual_path is None:
@@ -198,7 +213,6 @@ class ApiTools:
                     {
                         "timestamp": message.timestamp,
                         "type": message.type.value,
-                        "text": message.text,
                         "payload": message.payload,
                     }
                     for message in logs
