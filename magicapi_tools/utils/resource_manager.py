@@ -1341,9 +1341,7 @@ class MagicAPIResourceManager:
 
             # 如果是更新操作，添加到URL中
             url = f"{self.base_url}/magic/web/resource/file/api/save"
-            if is_update:
-                url += f"/{id}"
-
+ 
             # 使用application/json类型发送完整的API对象
             response = self.session.post(
                 url,
@@ -1496,8 +1494,7 @@ class MagicAPIResourceManager:
 
             # 如果是更新操作，添加到URL中
             url = f"{self.base_url}/magic/web/resource/file/api/save"
-            if is_update:
-                url += f"/{id}"
+
 
             # 使用application/json类型发送完整的API对象
             response = self.session.post(

@@ -971,11 +971,6 @@ SYNTAX_KNOWLEDGE: Dict[str, Dict[str, Any]] = {
                 },
                 {
                     "level": "danger",
-                    "title": "牢记：Magic-Script 不是 JavaScript",
-                    "content": "Magic-Script 基于 JVM，语法类似 JS 但有重大差异。不要假设 JS 语法在此适用！"
-                },
-                {
-                    "level": "warning",
                     "title": "循环语法差异",
                     "content": "Magic-Script 仅支持两种 for 循环：\n1. for(index, item in collection) - 遍历集合（可省略 index）\n2. for(i in range(start, end)) - 数值范围循环\n\n⚠️ 不支持 JS 的 for (init; condition; increment) 语法\n✅ 推荐使用 let 而非 var 声明变量"
                 },

@@ -321,11 +321,7 @@ class DocumentationTools:
             }
             if with_commands:
                 response["commands"] = [
-                    "python3 extract_api_paths.py --url --query '关键词'",
-                    "python3 extract_api_paths.py --detail <接口ID>",
-                    "python3 magic_api_resource_manager.py --list-tree --depth 2",
-                    "python3 magic_api_client.py --call 'GET /path' --params 'k=v'",
-                    "python3 magic_api_debug_client.py",
+        
                 ]
             return response
 
