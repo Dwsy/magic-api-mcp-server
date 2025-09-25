@@ -16,6 +16,7 @@ from magicapi_tools.tools import QueryTools
 from magicapi_tools.tools import ResourceManagementTools
 from magicapi_tools.tools import SearchTools
 from magicapi_tools.tools import SystemTools
+from magicapi_tools.tools.debug_api import DebugAPITools
 
 try:
     from fastmcp import FastMCP
@@ -44,6 +45,7 @@ class ToolComposer:
                 "class_method",
                 "search",
                 "debug",
+                "debug_api",
                 "code_generation",
                 "system"
             ],
@@ -64,6 +66,7 @@ class ToolComposer:
                 "class_method",
                 "search",
                 "debug",
+                "debug_api",
                 "code_generation"
             ],
             "production": [  # 生产工具集 - 生产环境稳定运行
@@ -94,6 +97,13 @@ class ToolComposer:
             "search_only": [  # 仅搜索工具 - 快速搜索定位
                 "search",
                 "system"
+            ],
+            "debugging": [  # 调试配置，专注问题排查和调试
+                "debug", 
+                "debug_api",
+                "query", 
+                "api", 
+                "documentation"
             ],
         }
 
@@ -126,8 +136,8 @@ class ToolComposer:
             },
             "debugging": {
                 "description": "调试配置，专注问题排查和调试",
-                "composition": ["debug", "query", "api", "documentation"],
-                "reasoning": "提供强大的调试和故障排查功能"
+                "composition": ["debug", "debug_api", "query", "api", "documentation"],
+                "reasoning": "提供强大的调试和故障排查功能，包含高级断点控制和超时处理"
             }
         }
 
@@ -141,6 +151,7 @@ class ToolComposer:
             "class_method": ["system"],  # 类方法工具依赖系统工具
             "search": ["system"],  # 搜索工具依赖系统工具
             "debug": ["query", "api"],  # 调试工具依赖查询和API
+            "debug_api": ["query", "api", "debug"],  # 调试API工具依赖查询、API和调试工具
             "code_generation": ["documentation"],  # 代码生成依赖文档工具
             "system": []  # 系统工具独立
         }
@@ -153,6 +164,7 @@ class ToolComposer:
             "query": 4,  # 查询工具重要
             "resource_management": 5,  # 资源管理中等
             "debug": 6,  # 调试工具中等
+            "debug_api": 6,  # 调试API工具中等
             "code_generation": 7,  # 代码生成工具一般
             "search": 8,  # 搜索工具一般
             "backup": 9,  # 备份工具一般
@@ -168,6 +180,7 @@ class ToolComposer:
             "class_method": ClassMethodTools(),
             "search": SearchTools(),
             "debug": DebugTools(),
+            "debug_api": DebugAPITools(),
             # "code_generation": CodeGenerationTools(),
             "system": SystemTools(),
         }
@@ -282,6 +295,17 @@ class ToolComposer:
 - `call_api_with_debug`：在调试模式下重放接口
 - `list_breakpoints`：查看当前断点
 
+### DebugAPITools
+- `call_magic_api_with_timeout`：带超时控制的API调用，用于断点调试场景
+- `get_latest_breakpoint_status`：获取最新的断点调试状态，用于轮询断点执行情况
+- `resume_from_breakpoint`：从当前断点恢复执行
+- `step_over_breakpoint`：单步执行，跳过当前断点
+- `step_into_breakpoint`：步入当前断点（进入函数/方法内部）
+- `step_out_breakpoint`：步出当前函数/方法（执行到当前函数结束）
+- `set_breakpoint`：在指定行号设置断点
+- `remove_breakpoint`：移除指定行号的断点
+- `list_breakpoints`：列出当前所有断点
+
 ### SearchTools
 - `search_api_scripts`：在脚本中搜索关键词
 - `search_todo_comments`：检索 TODO 注释（按需启用）
@@ -303,13 +327,20 @@ class ToolComposer:
 
     def get_module_info(self) -> Dict[str, Dict[str, Any]]:
         """获取模块信息。"""
-        return {
-            name: {
-                "class": module.__class__.__name__,
-                "description": getattr(module, "__doc__", "").strip() or "No description",
-            }
-            for name, module in self.modules.items()
-        }
+        # 为debug_api模块提供特定描述，因为它是新添加的
+        module_info = {}
+        for name, module in self.modules.items():
+            if name == "debug_api":
+                module_info[name] = {
+                    "class": module.__class__.__name__,
+                    "description": "断点调试API工具模块，提供超时控制、断点状态轮询和步进控制功能"
+                }
+            else:
+                module_info[name] = {
+                    "class": module.__class__.__name__,
+                    "description": getattr(module, "__doc__", "").strip() or "No description",
+                }
+        return module_info
 
     def recommend_composition(self, scenario: str = None, preferences: Dict[str, Any] = None) -> Dict[str, Any]:
         """智能推荐工具组合。
