@@ -22,6 +22,10 @@ DEFAULT_WS_URL = "ws://127.0.0.1:10712/magic/web/console"
 DEFAULT_TIMEOUT = 30.0
 DEFAULT_LOG_LEVEL = "INFO"
 DEFAULT_TRANSPORT = "stdio"
+DEFAULT_WS_LOG_HISTORY_SIZE = 500
+DEFAULT_WS_LOG_CAPTURE_WINDOW = 2
+DEFAULT_WS_RECONNECT_INTERVAL = 5.0
+DEFAULT_DEBUG_TIMEOUT = 600.0
 
 
 @dataclass(slots=True)
@@ -32,11 +36,16 @@ class MagicAPISettings:
     ws_url: str = DEFAULT_WS_URL
     username: str | None = None
     password: str | None = None
-    token: str | None = None
+    token: str | None = 'unauthorization'
     auth_enabled: bool = False
     timeout_seconds: float = DEFAULT_TIMEOUT
+    debug_timeout_seconds: float = DEFAULT_DEBUG_TIMEOUT
     log_level: str = DEFAULT_LOG_LEVEL
     transport: str = DEFAULT_TRANSPORT
+    ws_auto_start: bool = True
+    ws_log_history_size: int = DEFAULT_WS_LOG_HISTORY_SIZE
+    ws_log_capture_window: float = DEFAULT_WS_LOG_CAPTURE_WINDOW
+    ws_reconnect_interval: float = DEFAULT_WS_RECONNECT_INTERVAL
 
     @classmethod
     def from_env(cls, env: Mapping[str, str] | None = None) -> "MagicAPISettings":
@@ -50,12 +59,37 @@ class MagicAPISettings:
         auth_enabled = _str_to_bool(env.get("MAGIC_API_AUTH_ENABLED"))
         log_level = env.get("LOG_LEVEL", DEFAULT_LOG_LEVEL)
         transport = env.get("FASTMCP_TRANSPORT", DEFAULT_TRANSPORT)
+        ws_auto_start = _str_to_bool(env.get("MAGIC_API_WS_AUTO_START", "1"))
+        ws_history_size = env.get("MAGIC_API_WS_LOG_HISTORY_SIZE")
+        ws_capture_window_raw = env.get("MAGIC_API_WS_CAPTURE_WINDOW")
+        ws_reconnect_raw = env.get("MAGIC_API_WS_RECONNECT_INTERVAL")
+        debug_timeout_raw = env.get("MAGIC_API_DEBUG_TIMEOUT_SECONDS")
 
         timeout_raw = env.get("MAGIC_API_TIMEOUT_SECONDS")
         try:
             timeout_seconds = float(timeout_raw) if timeout_raw else DEFAULT_TIMEOUT
         except (TypeError, ValueError):
             timeout_seconds = DEFAULT_TIMEOUT
+
+        try:
+            ws_log_history_size = int(ws_history_size) if ws_history_size else DEFAULT_WS_LOG_HISTORY_SIZE
+        except (TypeError, ValueError):
+            ws_log_history_size = DEFAULT_WS_LOG_HISTORY_SIZE
+
+        try:
+            ws_log_capture_window = float(ws_capture_window_raw) if ws_capture_window_raw else DEFAULT_WS_LOG_CAPTURE_WINDOW
+        except (TypeError, ValueError):
+            ws_log_capture_window = DEFAULT_WS_LOG_CAPTURE_WINDOW
+
+        try:
+            ws_reconnect_interval = float(ws_reconnect_raw) if ws_reconnect_raw else DEFAULT_WS_RECONNECT_INTERVAL
+        except (TypeError, ValueError):
+            ws_reconnect_interval = DEFAULT_WS_RECONNECT_INTERVAL
+
+        try:
+            debug_timeout_seconds = float(debug_timeout_raw) if debug_timeout_raw else DEFAULT_DEBUG_TIMEOUT
+        except (TypeError, ValueError):
+            debug_timeout_seconds = DEFAULT_DEBUG_TIMEOUT
 
         return cls(
             base_url=base_url,
@@ -65,8 +99,13 @@ class MagicAPISettings:
             token=token,
             auth_enabled=auth_enabled,
             timeout_seconds=timeout_seconds,
+            debug_timeout_seconds=debug_timeout_seconds,
             log_level=log_level,
             transport=transport,
+            ws_auto_start=ws_auto_start,
+            ws_log_history_size=ws_log_history_size,
+            ws_log_capture_window=ws_log_capture_window,
+            ws_reconnect_interval=ws_reconnect_interval,
         )
 
     def inject_auth(self, headers: MutableMapping[str, str]) -> MutableMapping[str, str]:
