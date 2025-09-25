@@ -78,7 +78,7 @@ uv pip install -r requirements.txt  # 或 uv sync
 | `best_practices()` | 无 | `{items[]}` | SQL 注入防护、事务规范、响应统一等团队最佳实践。 |
 | `pitfalls()` | 无 | `{items[]}` | 逻辑短路差异、`exit` 语义、时间戳转换等常见坑点。 |
 | `workflow(task='create_api', with_commands=True)` | 任务类型 | `{task, description, steps[], commands?[]}` | 工作流中融入仓库 Python 脚本，默认返回命令清单。 |
-| `resource_tree(kind='api', search=None, csv=False, depth=None)` | 类型、搜索词、深度、CSV 开关 | `{kind, count, nodes[], csv?}` | 调用资源树 API，返回结构化节点列表，可选 CSV 输出。 |
+| `resource_tree(kind='api', format='tree', search=None, depth=None)` | 类型、搜索词、深度、格式选择 | `{format, kind, tree|nodes|csv, filters_applied}` | 调用资源树 API，支持树形(tree)/数组(json)/CSV(csv)格式输出，默认树形结构。 |
 | `path_to_id(path, fuzzy=True)` | 接口路径 | `{path, matches[]}` 或错误 | 通过资源树查找接口 ID，支持模糊/精确匹配。 |
 | `path_detail(path, fuzzy=True)` | 接口路径 | `{path, fuzzy, results[{meta, detail|error}]}` | 直接返回详情，等价于脚本 `--path-to-detail` 功能。 |
 | `api_detail(file_id)` | 文件 ID | `{id, name, path, method, script, meta_raw}` | 包装 `/magic/web/resource/file/{id}`，返回完整脚本与元信息。 |

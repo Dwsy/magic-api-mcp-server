@@ -28,13 +28,17 @@ def syntax(topic: str, locale: str = "zh-CN") -> Dict[str, Any]:
 ### 2. 资源管理工具
 ```python
 @mcp.tool(
-    name="create_resource_group",
-    description="创建资源分组，支持单个分组创建或批量分组创建。",
-    tags={"resource", "group", "create", "management"},
-    meta={"version": "2.0", "category": "resource-management"}
+    name="save_group",
+    description="保存资源分组，支持单个分组创建或更新，包含完整的分组配置选项。",
+    tags={"resource", "group", "save", "create", "update", "management", "full-config"},
+    meta={"version": "2.1", "category": "resource-management"}
 )
-def create_group(name=None, groups_data=None) -> Dict[str, Any]:
-    """创建分组（支持单个和批量操作）。"""
+def save_group(name=None, id=None, groups_data=None) -> Dict[str, Any]:
+    """保存分组（支持单个创建/更新和批量操作）。
+
+    - 创建操作：需要提供 name 等必需参数，不提供 id
+    - 更新操作：只需要提供 id，其他参数都是可选的，只更新提供的参数
+    """
 ```
 
 ### 3. 调试工具
@@ -103,7 +107,7 @@ meta = {
 ## 工具命名约定
 
 ### 统一接口工具
-- `create_resource_group`: 创建资源分组
+- `save_group`: 保存资源分组，支持创建和更新
 - `create_api_endpoint`: 创建API端点
 - `delete_resource`: 删除资源
 - `set_breakpoint`: 设置断点

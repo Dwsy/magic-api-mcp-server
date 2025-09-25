@@ -52,7 +52,7 @@
 - [ ] `get_development_workflow` - 获取开发指南
 
 #### 1.2 测试分组创建
-- [ ] `create_resource_group` - 创建测试专用分组
+- [ ] `save_group` - 保存分组，支持创建和更新测试专用分组
 - [ ] `list_resource_groups` - 验证分组创建结果
 
 ### 阶段2：基础API创建能力测试

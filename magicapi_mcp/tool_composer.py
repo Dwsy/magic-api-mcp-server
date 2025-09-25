@@ -271,7 +271,7 @@ class ToolComposer:
 ### ResourceManagementTools
 - `get_resource_tree`：查看或导出资源树
 - `save_api_endpoint` / `copy_resource` / `move_resource`：管理接口资源
-- `create_resource_group` / `delete_resource` 等：维护分组与资源
+- `save_group` / `delete_resource` 等：维护分组与资源
 
 ### QueryTools
 - `get_api_details_by_path` / `get_api_details_by_id`：获取接口详情

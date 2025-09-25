@@ -138,7 +138,7 @@ app = create_app("minimal", custom_modules=custom_modules)
 
 **包含工具**:
 - `get_resource_tree` - 资源树查询
-- `create_resource_group` - 创建分组
+- `save_group` - 保存分组，支持创建和更新
 - `create_api_endpoint` - 创建API
 - `copy/move/delete/lock/unlock_resource` - 资源操作
 - `export_resource_tree` - 导出资源树

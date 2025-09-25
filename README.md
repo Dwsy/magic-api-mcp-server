@@ -307,8 +307,8 @@ API调用和测试工具，支持灵活的接口调用和测试
 
 #### 3.4 资源管理工具 (ResourceManagementTools)
 完整的资源管理系统，支持资源树查询与批量操作
-- **get_resource_tree**: 获取资源树，支持过滤、导出 CSV
-- **create_resource_group**: 创建单个或批量分组
+- **get_resource_tree**: 获取资源树，支持过滤、导出多种格式（JSON/CSV/树形），向后兼容CSV参数
+- **save_group**: 保存分组，支持单个分组创建或更新，包含完整的分组配置选项
 - **create_api_resource** / **create_api_endpoint**: 创建单个或批量 API
 - **replace_api_script**: 按接口 ID 替换 Magic-Script 片段，支持一次或全量替换
 - **copy_resource**: 复制资源
@@ -316,7 +316,6 @@ API调用和测试工具，支持灵活的接口调用和测试
 - **delete_resource**: 删除单个或批量资源
 - **lock_resource** / **unlock_resource**: 批量锁定或解锁资源
 - **list_resource_groups**: 列出与搜索资源分组
-- **export_resource_tree**: 按 JSON/CSV 导出资源树
 - **get_resource_stats**: 统计资源数量与类型分布
 
 #### 3.5 查询工具 (QueryTools)
