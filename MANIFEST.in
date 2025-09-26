@@ -1,0 +1,12 @@
+include README.md
+include LICENSE
+include CHANGELOG.md
+include pyproject.toml
+recursive-include magicapi_mcp *.py
+recursive-include magicapi_tools *.py
+recursive-include magicapi_tools/domain *.py
+recursive-include magicapi_tools/domain/dtos *.py
+recursive-include magicapi_tools/services *.py
+recursive-include magicapi_tools/utils *.py
+recursive-include magicapi_tools/tools *.py
+recursive-include magicapi_tools/ws *.py
