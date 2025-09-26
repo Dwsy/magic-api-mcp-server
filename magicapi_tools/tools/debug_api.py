@@ -153,7 +153,7 @@ class DebugAPITools:
                     time.sleep(0.1)
 
                     # 检查断点状态
-                    debug_service: WebSocketDebugService = context.debug_service
+                    debug_service: WebSocketDebugService = context.ws_debug_service
                     status = debug_service.get_debug_status_tool()
                     if status.get("success"):
                         # 如果存在断点，返回断点状态
@@ -202,7 +202,7 @@ class DebugAPITools:
                 context.ws_manager.ensure_running_sync()
 
                 # 获取WebSocket调试服务
-                debug_service: WebSocketDebugService = context.debug_service
+                debug_service: WebSocketDebugService = context.ws_debug_service
 
                 # 获取调试状态
                 status = debug_service.get_debug_status_tool()
@@ -229,7 +229,7 @@ class DebugAPITools:
                 await context.ws_manager.ensure_running()
 
                 # 获取WebSocket调试服务
-                debug_service: WebSocketDebugService = context.debug_service
+                debug_service: WebSocketDebugService = context.ws_debug_service
 
                 # 执行恢复操作
                 result = await debug_service.resume_breakpoint_tool()
@@ -249,7 +249,7 @@ class DebugAPITools:
                 await context.ws_manager.ensure_running()
 
                 # 获取WebSocket调试服务
-                debug_service: WebSocketDebugService = context.debug_service
+                debug_service: WebSocketDebugService = context.ws_debug_service
 
                 # 执行单步跳过操作
                 result = await debug_service.step_over_tool()
@@ -269,7 +269,7 @@ class DebugAPITools:
                 await context.ws_manager.ensure_running()
 
                 # 获取WebSocket调试服务
-                debug_service: WebSocketDebugService = context.debug_service
+                debug_service: WebSocketDebugService = context.ws_debug_service
 
                 # 发送步入指令 (step type 2)
                 script_id = debug_service._current_script_id()
@@ -293,7 +293,7 @@ class DebugAPITools:
                 await context.ws_manager.ensure_running()
 
                 # 获取WebSocket调试服务
-                debug_service: WebSocketDebugService = context.debug_service
+                debug_service: WebSocketDebugService = context.ws_debug_service
 
                 # 发送步出指令 (step type 3)
                 script_id = debug_service._current_script_id()
@@ -322,7 +322,7 @@ class DebugAPITools:
                 context.ws_manager.ensure_running_sync()
 
                 # 获取WebSocket调试服务
-                debug_service: WebSocketDebugService = context.debug_service
+                debug_service: WebSocketDebugService = context.ws_debug_service
 
                 # 设置断点
                 result = debug_service.set_breakpoint_tool(line_number=line_number)
@@ -347,7 +347,7 @@ class DebugAPITools:
                 context.ws_manager.ensure_running_sync()
 
                 # 获取WebSocket调试服务
-                debug_service: WebSocketDebugService = context.debug_service
+                debug_service: WebSocketDebugService = context.ws_debug_service
 
                 # 移除断点
                 result = debug_service.remove_breakpoint_tool(line_number=line_number)
@@ -367,7 +367,7 @@ class DebugAPITools:
                 context.ws_manager.ensure_running_sync()
 
                 # 获取WebSocket调试服务
-                debug_service: WebSocketDebugService = context.debug_service
+                debug_service: WebSocketDebugService = context.ws_debug_service
 
                 # 列出断点
                 result = debug_service.list_breakpoints_tool()
