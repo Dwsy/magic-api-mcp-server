@@ -58,87 +58,19 @@ class BackupTools:
             ] = 10,
         ) -> Dict[str, Any]:
             """查询备份列表。"""
-            try:
-                # 调用备份API
-                params = {}
-                if timestamp:
-                    params['timestamp'] = timestamp
+            # 使用服务层处理备份列表查询
+            from magicapi_tools.domain.dtos.backup_dtos import BackupOperationRequest
 
-                ok, response = context.http_client.call_api("GET", "/magic/web/backups", params=params)
+            request = BackupOperationRequest(
+                operation="list",
+                timestamp=timestamp,
+                filter_text=filter_text,
+                name_filter=name_filter,
+                limit=limit
+            )
 
-                if not ok:
-                    return error_response(
-                        response.get("code", "network_error"),
-                        response.get("message", "查询备份列表失败"),
-                        response.get("detail")
-                    )
-
-                data = response.get("body", {})
-                if data.get("code") != 1:
-                    return error_response(
-                        data.get("code", -1),
-                        data.get("message", "查询备份列表失败"),
-                        data.get("data")
-                    )
-
-                backups = data.get("data", [])
-
-                # 应用过滤
-                original_count = len(backups)
-
-                # 过滤逻辑
-                if filter_text or name_filter:
-                    filtered_backups = []
-                    filter_lower = filter_text.lower() if filter_text else ""
-                    name_filter_lower = name_filter.lower() if name_filter else ""
-
-                    for backup in backups:
-                        # 检查过滤条件
-                        should_include = True
-
-                        # 通用过滤
-                        if filter_text:
-                            searchable_fields = [
-                                backup.get('id', ''),
-                                backup.get('type', ''),
-                                backup.get('name', ''),
-                                backup.get('createBy', ''),
-                                backup.get('tag', ''),
-                            ]
-                            if not any(filter_lower in str(field).lower() for field in searchable_fields if field):
-                                should_include = False
-
-                        # 名称过滤
-                        if name_filter and should_include:
-                            backup_name = backup.get('name', '')
-                            if not (backup_name and name_filter_lower in str(backup_name).lower()):
-                                should_include = False
-
-                        if should_include:
-                            filtered_backups.append(backup)
-
-                    backups = filtered_backups
-
-                # 应用 limit 限制
-                filtered_count = len(backups)
-                if limit > 0:
-                    backups = backups[:limit]
-
-                return {
-                    "total_backups": original_count,
-                    "filtered_backups": filtered_count,
-                    "returned_backups": len(backups),
-                    "limit": limit,
-                    "filters_applied": {
-                        "timestamp": timestamp,
-                        "filter_text": filter_text,
-                        "name_filter": name_filter,
-                    },
-                    "backups": backups,
-                }
-
-            except Exception as exc:
-                return error_response("backup_list_error", f"查询备份列表失败: {exc}", str(exc))
+            response = context.backup_service.list_backups(request)
+            return response.to_dict()
 
         @mcp_app.tool(
             name="get_backup_history",
@@ -152,37 +84,12 @@ class BackupTools:
             ],
         ) -> Dict[str, Any]:
             """查询备份历史。"""
-            try:
-                if not backup_id.strip():
-                    return error_response("invalid_param", "备份ID不能为空")
+            # 使用服务层处理备份历史查询
+            from magicapi_tools.domain.dtos.backup_dtos import BackupHistoryRequest
 
-                ok, response = context.http_client.call_api("GET", f"/magic/web/backup/{backup_id}")
-
-                if not ok:
-                    return error_response(
-                        response.get("code", "network_error"),
-                        response.get("message", "查询备份历史失败"),
-                        response.get("detail")
-                    )
-
-                data = response.get("body", {})
-                if data.get("code") != 1:
-                    return error_response(
-                        data.get("code", -1),
-                        data.get("message", "查询备份历史失败"),
-                        data.get("data")
-                    )
-
-                history = data.get("data", [])
-
-                return {
-                    "backup_id": backup_id,
-                    "history_count": len(history),
-                    "history": history,
-                }
-
-            except Exception as exc:
-                return error_response("backup_history_error", f"查询备份历史失败: {exc}", str(exc))
+            request = BackupHistoryRequest(backup_id=backup_id)
+            response = context.backup_service.get_backup_history(request)
+            return response.to_dict()
 
         @mcp_app.tool(
             name="get_backup_content",
@@ -200,43 +107,16 @@ class BackupTools:
             ],
         ) -> Dict[str, Any]:
             """获取备份内容。"""
-            try:
-                if not backup_id.strip():
-                    return error_response("invalid_param", "备份ID不能为空")
+            # 使用服务层处理备份内容查询
+            from magicapi_tools.domain.dtos.backup_dtos import BackupOperationRequest
 
-                params = {
-                    'id': backup_id,
-                    'timestamp': timestamp
-                }
-
-                ok, response = context.http_client.call_api("GET", "/magic/web/backup", params=params)
-
-                if not ok:
-                    return error_response(
-                        response.get("code", "network_error"),
-                        response.get("message", "获取备份内容失败"),
-                        response.get("detail")
-                    )
-
-                data = response.get("body", {})
-                if data.get("code") != 1:
-                    return error_response(
-                        data.get("code", -1),
-                        data.get("message", "获取备份内容失败"),
-                        data.get("data")
-                    )
-
-                content = data.get("data")
-
-                return {
-                    "backup_id": backup_id,
-                    "timestamp": timestamp,
-                    "content": content,
-                    "has_content": content is not None,
-                }
-
-            except Exception as exc:
-                return error_response("backup_content_error", f"获取备份内容失败: {exc}", str(exc))
+            request = BackupOperationRequest(
+                operation="content",
+                backup_id=backup_id,
+                timestamp=timestamp
+            )
+            response = context.backup_service.get_backup_content(request)
+            return response.to_dict()
 
         @mcp_app.tool(
             name="rollback_backup",
@@ -254,43 +134,16 @@ class BackupTools:
             ],
         ) -> Dict[str, Any]:
             """执行回滚操作。"""
-            try:
-                if not backup_id.strip():
-                    return error_response("invalid_param", "备份ID不能为空")
+            # 使用服务层处理备份回滚
+            from magicapi_tools.domain.dtos.backup_dtos import BackupOperationRequest
 
-                rollback_data = {
-                    'id': backup_id,
-                    'timestamp': timestamp
-                }
-
-                ok, response = context.http_client.call_api("POST", "/magic/web/backup/rollback", data=rollback_data)
-
-                if not ok:
-                    return error_response(
-                        response.get("code", "network_error"),
-                        response.get("message", "回滚备份失败"),
-                        response.get("detail")
-                    )
-
-                data = response.get("body", {})
-                if data.get("code") != 1:
-                    return error_response(
-                        data.get("code", -1),
-                        data.get("message", "回滚备份失败"),
-                        data.get("data")
-                    )
-
-                success = data.get("data", False)
-
-                return {
-                    "backup_id": backup_id,
-                    "timestamp": timestamp,
-                    "rollback_success": success,
-                    "message": "回滚成功" if success else "回滚失败",
-                }
-
-            except Exception as exc:
-                return error_response("rollback_error", f"回滚备份失败: {exc}", str(exc))
+            request = BackupOperationRequest(
+                operation="rollback",
+                backup_id=backup_id,
+                timestamp=timestamp
+            )
+            response = context.backup_service.rollback_backup(request)
+            return response.to_dict()
 
         @mcp_app.tool(
             name="create_full_backup",
@@ -299,33 +152,11 @@ class BackupTools:
         )
         def create_full_backup_tool() -> Dict[str, Any]:
             """执行全量备份。"""
-            try:
-                ok, response = context.http_client.call_api("POST", "/magic/web/backup/full")
+            # 使用服务层处理全量备份创建
+            from magicapi_tools.domain.dtos.backup_dtos import BackupOperationRequest
 
-                if not ok:
-                    return error_response(
-                        response.get("code", "network_error"),
-                        response.get("message", "创建全量备份失败"),
-                        response.get("detail")
-                    )
-
-                data = response.get("body", {})
-                if data.get("code") != 1:
-                    return error_response(
-                        data.get("code", -1),
-                        data.get("message", "创建全量备份失败"),
-                        data.get("data")
-                    )
-
-                success = data.get("data", False)
-
-                return {
-                    "backup_type": "full",
-                    "backup_success": success,
-                    "message": "全量备份成功" if success else "全量备份失败",
-                }
-
-            except Exception as exc:
-                return error_response("full_backup_error", f"创建全量备份失败: {exc}", str(exc))
+            request = BackupOperationRequest(operation="create_full")
+            response = context.backup_service.create_full_backup(request)
+            return response.to_dict()
 
 
