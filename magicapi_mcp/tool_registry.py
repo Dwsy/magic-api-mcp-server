@@ -8,6 +8,14 @@ from magicapi_mcp.settings import MagicAPISettings
 from magicapi_tools.logging_config import get_logger
 from magicapi_tools.utils.http_client import MagicAPIHTTPClient
 from magicapi_tools.utils.resource_manager import MagicAPIResourceManager, MagicAPIResourceTools
+from magicapi_tools.services import (
+    ApiService,
+    ResourceService,
+    QueryService,
+    BackupService,
+    DebugService,
+    ClassMethodService,
+)
 from magicapi_tools.ws.debug_service import WebSocketDebugService
 from magicapi_tools.ws.manager import WSManager
 
@@ -27,6 +35,15 @@ class ToolContext:
         self.resource_tools = MagicAPIResourceTools(self.resource_manager)
         self.ws_manager = WSManager(settings, self.resource_manager)
         self.ws_debug_service = WebSocketDebugService(self.ws_manager, self.http_client)
+
+        # 初始化业务服务层
+        self.api_service = ApiService(self)
+        self.resource_service = ResourceService(self)
+        self.query_service = QueryService(self)
+        self.backup_service = BackupService(self)
+        self.debug_service = DebugService(self)
+        self.class_method_service = ClassMethodService(self)
+
         # 兼容旧属性命名
         self.debug_tools = self.ws_debug_service
 

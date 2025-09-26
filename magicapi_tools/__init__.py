@@ -26,6 +26,7 @@ from magicapi_tools.utils.extractor import (
     _nodes_to_csv,
     MagicAPIExtractorError,
 )
+from magicapi_tools import services
 __all__ = [
     "MagicAPISettings",
     "DEFAULT_SETTINGS",
@@ -51,6 +52,7 @@ __all__ = [
     "_filter_nodes",
     "_nodes_to_csv",
     "get_logger",
+    "services",
 ]
 
 
