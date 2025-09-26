@@ -248,6 +248,7 @@ class ResourceOperationResponse:
     success: bool = False
     operation: str = ""
     resource_id: Optional[str] = None
+    resource_ids: Optional[List[str]] = None  # 批量操作时使用
     target_id: Optional[str] = None
     message: str = ""
     affected_count: int = 0
