@@ -169,7 +169,7 @@ class MagicAPIHTTPClient:
                 logger.error(f"获取API详情失败: HTTP {response.status_code}")
                 logger.error(f"  请求URL: {url}")
                 logger.error(f"  文件ID: {file_id}")
-                logger.error(f"  响应内容: {response.text[:200]}...")
+                logger.error(f"  响应内容: {response.text[:1000]}...")
                 logger.debug(f"  响应头: {dict(response.headers)}")
 
                 return False, {
@@ -247,7 +247,7 @@ class MagicAPIHTTPClient:
             logger.debug(f"  查询参数: {params}")
         if data:
             if isinstance(data, (dict, list)):
-                logger.debug(f"  请求体(JSON): {json.dumps(data, ensure_ascii=False)[:200]}...")
+                logger.debug(f"  请求体(JSON): {json.dumps(data, ensure_ascii=False)[:1000]}...")
             elif isinstance(data, str) and len(data) < 200:
                 logger.debug(f"  请求体: {data}")
             else:
@@ -297,13 +297,13 @@ class MagicAPIHTTPClient:
             if "application/json" in content_type:
                 try:
                     body = response.json()
-                    logger.debug(f"  响应体(JSON): {json.dumps(body, ensure_ascii=False)[:200]}...")
+                    logger.debug(f"  响应体(JSON): {json.dumps(body, ensure_ascii=False)[:1000]}...")
                 except json.JSONDecodeError:
                     body = response.text
-                    logger.debug(f"  响应体(文本): {body[:200]}...")
+                    logger.debug(f"  响应体(文本): {body[:1000]}...")
             else:
                 body = response.text
-                logger.debug(f"  响应体: {body[:200]}...")
+                logger.debug(f"  响应体: {body[:1000]}...")
 
             success = response.status_code < 400
             if not success:

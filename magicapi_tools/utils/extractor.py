@@ -421,6 +421,45 @@ def format_file_detail(file_data: Dict[str, Any]) -> str:
     return "\n".join(lines)
 
 
+
+def _collect_all_endpoints(node: Dict[str, Any], parent_path: str, results: List[Dict[str, Any]]) -> None:
+    """收集所有端点的详细信息（包含ID和display字符串），与 _traverse_api_tree 逻辑完全一致。"""
+    node_info = node.get("node", {})
+    current_path = node_info.get("path", "")
+    method = node_info.get("method")
+    api_id = node_info.get("id")
+    name = node_info.get("name", "")
+
+    if current_path and parent_path:
+        full_path = f"{parent_path}/{current_path}"
+    elif current_path:
+        full_path = current_path
+    else:
+        full_path = parent_path
+
+    # 使用与 _traverse_api_tree 相同的路径清理逻辑
+    full_path = _clean_path(full_path)
+
+    if method and full_path:
+        # 生成与 _traverse_api_tree 完全相同的display字符串
+        display = f"{method} {full_path}"
+        if name and name != current_path:
+            display += f" [{name}]"
+
+        if api_id:
+            results.append({
+                "id": api_id,
+                "path": full_path,
+                "method": method,
+                "name": name,
+                "display": display,
+                "groupId": node_info.get("groupId"),
+            })
+
+    for child in node.get("children", []) or []:
+        _collect_all_endpoints(child, full_path, results)
+
+
 __all__ = [
     "MagicAPIExtractorError",
     "ResourceTree",
@@ -433,4 +472,5 @@ __all__ = [
     "_flatten_tree",
     "_filter_nodes",
     "_nodes_to_csv",
+    "_collect_all_endpoints"
 ]
