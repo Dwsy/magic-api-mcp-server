@@ -242,6 +242,7 @@ class ToolComposer:
         @mcp_app.prompt(
             name="magic_api_developer_guide",
             description="生成专业的 Magic-API 开发者助手提示词，帮助用户高效使用 Magic-API MCP 工具",
+            enabled=False,
         )
         def magic_api_developer_guide() -> str:
             """生成 Magic-API 开发者助手的核心提示词。"""
