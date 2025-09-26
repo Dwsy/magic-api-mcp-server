@@ -119,6 +119,50 @@ class SearchTools:
 
                 results = data.get("data", [])
 
+                # 为搜索结果添加API名称
+                if results:
+                    # 收集所有API ID
+                    api_ids = [result.get("id") for result in results if result.get("id")]
+
+                    # 批量获取API详情来获取名称、方法和路径
+                    api_info_map = {}
+                    for api_id in api_ids:
+                        try:
+                            ok, payload = context.http_client.api_detail(api_id)
+                            if ok and payload:
+                                api_name = payload.get("name", "")
+                                api_method = payload.get("method", "")
+                                api_path = payload.get("path", "")
+                                if api_name:
+                                    # 构建完整路径：方法 + 路径
+                                    full_path = ""
+                                    if api_method and api_path:
+                                        full_path = f"{api_method} {api_path}"
+                                    elif api_method:
+                                        full_path = api_method
+                                    elif api_path:
+                                        full_path = api_path
+                                    else:
+                                        full_path = "未知路径"
+
+                                    api_info_map[api_id] = {
+                                        "name": api_name,
+                                        "full_path": full_path
+                                    }
+                        except Exception as exc:
+                            logger.warning(f"获取API {api_id} 详情失败: {exc}")
+                            continue
+
+                    # 为每个搜索结果添加名称和完整路径
+                    for result in results:
+                        api_id = result.get("id")
+                        if api_id and api_id in api_info_map:
+                            result["name"] = api_info_map[api_id]["name"]
+                            result["full_path"] = api_info_map[api_id]["full_path"]
+                        else:
+                            result["name"] = "未知"
+                            result["full_path"] = "未知路径"
+
                 # 应用 limit 限制
                 if limit > 0:
                     results = results[:limit]

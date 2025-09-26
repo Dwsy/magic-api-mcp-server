@@ -42,7 +42,17 @@ from magicapi_tools.utils.extractor import (
     _nodes_to_csv,
 )
 from magicapi_tools.utils.resource_manager import build_api_save_kwargs_from_detail
-from magicapi_tools.utils import error_response
+from magicapi_tools.utils import (
+    error_response,
+    clean_string_param,
+    parse_json_param,
+    create_operation_error,
+    handle_tool_exception,
+    log_api_call_details,
+    log_operation_start,
+    log_operation_end,
+    validate_required_params,
+)
 
 if TYPE_CHECKING:
     from fastmcp import FastMCP
@@ -568,132 +578,29 @@ class ResourceManagementTools:
             - 创建操作：需要提供 group_id, name, method, path, script 等必需参数
             - 更新操作：只需要提供 id，其他参数都是可选的，只更新提供的参数
             """
-            if id == "null" or id == "":
-                id = None
+            # 重构：使用服务层处理业务逻辑
+            from magicapi_tools.domain.dtos.resource_dtos import ApiCreationRequest
 
-            # MCP工具调用日志
-            operation_type = "更新" if id else "创建"
-            logger.info(f"MCP工具调用: save_api_endpoint ({operation_type})")
-            logger.info(f"  API ID: {id if id else 'N/A'}")
-            logger.info(f"  API名称: {name}")
-            logger.info(f"  API路径: {path}")
-            logger.info(f"  HTTP方法: {method}")
-            logger.info(f"  分组ID: {group_id}")
-            if description:
-                logger.debug(f"  描述: {description[:100]}...")
-            if script:
-                logger.debug(f"  脚本长度: {len(script)} 字符")
-
-            import json
-
-            is_update = id is not None
-
-            if is_update:
-                # 更新操作：只必需id，其他参数都是可选的
-                if not id:
-                    return error_response("invalid_params", "更新操作需要提供id")
-            else:
-                # 创建操作：必需group_id, name, method, path, script
-                required_fields = {
-                    "group_id": group_id,
-                    "name": name,
-                    "method": method,
-                    "path": path,
-                    "script": script
-                }
-                missing_fields = [
-                    k for k, v in required_fields.items() if v is None]
-                if missing_fields:
-                    return error_response("invalid_params", f"创建操作需要提供以下必需参数: {', '.join(missing_fields)}")
-
-                # 对于创建操作，如果没有提供method，默认设置为GET
-                if method is None:
-                    method = "GET"
-
-            # 解析JSON参数
-            parsed_parameters = None
-            if parameters:
-                try:
-                    parsed_parameters = json.loads(parameters)
-                except json.JSONDecodeError:
-                    return error_response("invalid_json", f"parameters 格式错误: {parameters}")
-
-            parsed_headers = None
-            if headers:
-                try:
-                    parsed_headers = json.loads(headers)
-                except json.JSONDecodeError:
-                    return error_response("invalid_json", f"headers 格式错误: {headers}")
-
-            parsed_paths = None
-            if paths:
-                try:
-                    parsed_paths = json.loads(paths)
-                except json.JSONDecodeError:
-                    return error_response("invalid_json", f"paths 格式错误: {paths}")
-
-            parsed_options = None
-            if options:
-                try:
-                    parsed_options = json.loads(options)
-                except json.JSONDecodeError:
-                    return error_response("invalid_json", f"options 格式错误: {options}")
-
-            parsed_request_body_definition = None
-            if request_body_definition:
-                try:
-                    parsed_request_body_definition = json.loads(
-                        request_body_definition)
-                except json.JSONDecodeError:
-                    return error_response("invalid_json", f"request_body_definition 格式错误: {request_body_definition}")
-
-            parsed_response_body_definition = None
-            if response_body_definition:
-                try:
-                    parsed_response_body_definition = json.loads(
-                        response_body_definition)
-                except json.JSONDecodeError:
-                    return error_response("invalid_json", f"response_body_definition 格式错误: {response_body_definition}")
-
-            # 调用工具方法
-            result = context.resource_tools.create_api_tool(
+            request = ApiCreationRequest(
                 group_id=group_id,
                 name=name,
                 method=method,
                 path=path,
                 script=script,
+                id=id,
                 description=description,
-                parameters=parsed_parameters,
-                headers=parsed_headers,
-                paths=parsed_paths,
+                parameters=parameters,
+                headers=headers,
+                paths=paths,
                 request_body=request_body,
-                request_body_definition=parsed_request_body_definition,
+                request_body_definition=request_body_definition,
                 response_body=response_body,
-                response_body_definition=parsed_response_body_definition,
-                options=parsed_options,
-                id=id,  # 更新操作时传入id，创建操作时为None
+                response_body_definition=response_body_definition,
+                options=options,
             )
 
-            if "success" not in result:
-                # 记录详细的原始错误信息
-                error_info = result.get("error", {})
-                operation_type = "更新" if id else "创建"
-                logger.error(
-                    f"{operation_type}API失败: {error_info.get('message', '未知错误')}")
-                logger.error(f"  API ID: {id if id else 'N/A'}")
-                logger.error(f"  API名称: {name}")
-                logger.error(f"  API路径: {path}")
-                logger.error(f"  HTTP方法: {method}")
-                logger.error(f"  错误代码: {error_info.get('code', 'unknown')}")
-                logger.debug(f"  原始错误信息: {result}")
-
-                return error_response(
-                    error_info.get("code", "api_save_failed"),
-                    error_info.get("message", f"{operation_type}API失败"),
-                    result  # 包含完整的原始错误信息
-                )
-
-            return result
+            response = context.resource_service.create_api(request)
+            return response.to_dict()
 
         @mcp_app.tool(
             name="copy_resource",
@@ -703,29 +610,8 @@ class ResourceManagementTools:
         )
         def copy_resource(src_id: str, target_id: str) -> Dict[str, Any]:
             """复制资源到指定位置。"""
-
-            try:
-                # 清理参数
-                clean_src_id = str(src_id).strip()
-                clean_target_id = str(target_id).strip()
-
-                if not clean_src_id or not clean_target_id:
-                    return error_response("invalid_params", "src_id和target_id不能为空")
-
-                # 调用工具方法，获取结构化的错误信息
-                result = context.resource_tools.copy_resource_tool(
-                    clean_src_id, clean_target_id)
-                if "success" in result:
-                    return result
-                else:
-                    error_info = result.get("error", {})
-                    return error_response(
-                        error_info.get("code", "copy_failed"),
-                        error_info.get("message", f"复制资源 {clean_src_id} 失败"),
-                        result  # 包含完整的原始错误信息
-                    )
-            except Exception as e:
-                return error_response("unexpected_error", f"复制资源时发生异常: {str(e)}")
+            response = context.resource_service.copy_resource(src_id, target_id)
+            return response.to_dict()
 
         @mcp_app.tool(
             name="move_resource",
@@ -735,29 +621,8 @@ class ResourceManagementTools:
         )
         def move_resource(src_id: str, target_id: str) -> Dict[str, Any]:
             """移动资源到指定位置。"""
-
-            try:
-                # 清理参数
-                clean_src_id = str(src_id).strip()
-                clean_target_id = str(target_id).strip()
-
-                if not clean_src_id or not clean_target_id:
-                    return error_response("invalid_params", "src_id和target_id不能为空")
-
-                # 调用工具方法，获取结构化的错误信息
-                result = context.resource_tools.move_resource_tool(
-                    clean_src_id, clean_target_id)
-                if "success" in result:
-                    return result
-                else:
-                    error_info = result.get("error", {})
-                    return error_response(
-                        error_info.get("code", "move_failed"),
-                        error_info.get("message", f"移动资源 {clean_src_id} 失败"),
-                        result  # 包含完整的原始错误信息
-                    )
-            except Exception as e:
-                return error_response("unexpected_error", f"移动资源时发生异常: {str(e)}")
+            response = context.resource_service.move_resource(src_id, target_id)
+            return response.to_dict()
 
         @mcp_app.tool(
             name="delete_resource",
@@ -777,56 +642,18 @@ class ResourceManagementTools:
             ] = None,
         ) -> Dict[str, Any]:
             """删除资源（支持单个和批量操作）。"""
+            # 解析resource_ids参数（如果是JSON字符串）
+            parsed_resource_ids = None
+            if resource_ids:
+                try:
+                    import json
+                    parsed_resource_ids = json.loads(resource_ids)
+                except (json.JSONDecodeError, TypeError):
+                    # 如果解析失败，当作单个ID处理
+                    parsed_resource_ids = [resource_ids]
 
-            import json
-
-            try:
-                # 处理批量删除
-                if resource_ids:
-                    try:
-                        ids_list = json.loads(resource_ids)
-                    except json.JSONDecodeError:
-                        return error_response("invalid_json", f"resource_ids 格式错误: {resource_ids}")
-
-                    # 调用工具方法进行批量删除
-                    result = context.resource_tools.delete_resource_tool(
-                        resource_ids=ids_list)
-                    if "success" in result:
-                        return result
-                    else:
-                        error_info = result.get("error", {})
-                        return error_response(
-                            error_info.get("code", "batch_delete_failed"),
-                            error_info.get("message", "批量删除资源失败"),
-                            result  # 包含完整的原始错误信息
-                        )
-
-                # 单个删除
-                elif resource_id:
-                    # 清理resource_id（去除前后空格）
-                    clean_resource_id = str(resource_id).strip()
-                    if not clean_resource_id:
-                        return error_response("invalid_params", "resource_id不能为空")
-
-                    # 调用工具方法进行单个删除
-                    result = context.resource_tools.delete_resource_tool(
-                        resource_id=clean_resource_id)
-                    if "success" in result:
-                        return result
-                    else:
-                        error_info = result.get("error", {})
-                        return error_response(
-                            error_info.get("code", "delete_failed"),
-                            error_info.get(
-                                "message", f"删除资源 {clean_resource_id} 失败"),
-                            result  # 包含完整的原始错误信息
-                        )
-
-                else:
-                    return error_response("invalid_params", "必须提供 resource_id 或 resource_ids 参数")
-
-            except Exception as e:
-                return error_response("unexpected_error", f"删除资源时发生异常: {str(e)}")
+            response = context.resource_service.delete_resource(resource_id=resource_id, resource_ids=parsed_resource_ids)
+            return response.to_dict()
 
         @mcp_app.tool(
             name="list_resource_groups",
@@ -933,79 +760,8 @@ class ResourceManagementTools:
             ],
         ) -> Dict[str, Any]:
             """读取或设置资源的锁定状态。"""
-
-            try:
-                # 清理参数
-                clean_resource_id = str(resource_id).strip()
-                if not clean_resource_id:
-                    return error_response("invalid_params", "resource_id不能为空")
-
-                if action == "read":
-                    # 读取锁定状态 - 使用 GET /resource/file/{id} 接口
-                    ok, payload = context.http_client.api_detail(
-                        clean_resource_id)
-                    if not ok:
-                        return error_response(payload.get("code"), payload.get("message", "无法获取资源信息"), payload.get("detail"))
-
-                    # 从返回的数据中提取锁定状态
-                    lock_status = payload.get("lock", "0")  # 默认解锁状态
-                    is_locked = lock_status == "1"
-
-                    return {
-                        "success": True,
-                        "resource_id": clean_resource_id,
-                        "action": "read",
-                        "is_locked": is_locked,
-                        "lock_status": lock_status,
-                        "lock_status_description": "已锁定" if is_locked else "未锁定",
-                        "resource_info": payload  # 返回完整的资源信息
-                    }
-
-                elif action == "lock":
-                    # 锁定资源
-                    result = context.resource_tools.lock_resource_tool(
-                        resource_id=clean_resource_id)
-                    if "success" in result:
-                        return {
-                            "success": True,
-                            "resource_id": clean_resource_id,
-                            "action": "lock",
-                            "message": f"资源 {clean_resource_id} 已成功锁定"
-                        }
-                    else:
-                        error_info = result.get("error", {})
-                        return error_response(
-                            error_info.get("code", "lock_failed"),
-                            error_info.get(
-                                "message", f"锁定资源 {clean_resource_id} 失败"),
-                            result  # 包含完整的原始错误信息
-                        )
-
-                elif action == "unlock":
-                    # 解锁资源
-                    result = context.resource_tools.unlock_resource_tool(
-                        resource_id=clean_resource_id)
-                    if "success" in result:
-                        return {
-                            "success": True,
-                            "resource_id": clean_resource_id,
-                            "action": "unlock",
-                            "message": f"资源 {clean_resource_id} 已成功解锁"
-                        }
-                    else:
-                        error_info = result.get("error", {})
-                        return error_response(
-                            error_info.get("code", "unlock_failed"),
-                            error_info.get(
-                                "message", f"解锁资源 {clean_resource_id} 失败"),
-                            result  # 包含完整的原始错误信息
-                        )
-
-                else:
-                    return error_response("invalid_action", f"不支持的操作类型: {action}")
-
-            except Exception as e:
-                return error_response("unexpected_error", f"操作资源锁定状态时发生异常: {str(e)}")
+            response = context.resource_service.read_set_lock_status(resource_id, action)
+            return response.to_dict()
 
         @mcp_app.tool(
             name="get_resource_statistics",

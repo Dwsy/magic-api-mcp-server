@@ -30,6 +30,7 @@ from magicapi_tools.tools.common import (
     error_response,
     path_to_id_impl,
 )
+from magicapi_tools.domain.dtos.query_dtos import QueryRequest, QueryResponse, EndpointFilter
 
 # 获取查询工具的logger
 logger = get_logger('tools.query')
@@ -224,63 +225,20 @@ class QueryTools:
                 Field(description="路径/名称模糊匹配，支持正则表达式")
             ] = None,
         ) -> Dict[str, Any]:
-            try:
-                tree = load_resource_tree(client=context.http_client)
-                endpoints = extract_api_endpoints(tree)
-                filtered_endpoints = filter_endpoints(
-                    endpoints,
-                    method_filter=method_filter,
-                    path_filter=path_filter,
-                    name_filter=name_filter,
-                    query_filter=query_filter,
-                )
+            """搜索和过滤Magic-API接口端点。"""
+            # 使用服务层处理查询逻辑
+            filters = EndpointFilter(
+                method_filter=method_filter,
+                path_filter=path_filter,
+                name_filter=name_filter,
+                query_filter=query_filter
+            )
 
-                # 获取所有端点的详细信息（包含ID和display字符串）
-                all_endpoint_details = []
-                for child in tree.api_nodes:
-                    _collect_all_endpoints(child, "", all_endpoint_details)
+            request = QueryRequest(
+                query_type="endpoints",
+                filters=filters
+            )
 
-                # 创建端点字符串到ID的映射
-                endpoint_to_id_map = {}
-                for detail in all_endpoint_details:
-                    display = detail.get("display")
-                    api_id = detail.get("id")
-                    if display and api_id:
-                        endpoint_to_id_map[display] = api_id
-
-                results = []
-                for endpoint in filtered_endpoints:
-                    if "[" in endpoint and "]" in endpoint:
-                        method_path, name = endpoint.split(" [", 1)
-                        name = name.rstrip("]")
-                    else:
-                        method_path, name = endpoint, ""
-                    method, path_value = method_path.split(" ", 1)
-
-                    # 获取对应的ID
-                    api_id = endpoint_to_id_map.get(endpoint)
-
-                    results.append(
-                        {
-                            "method": method,
-                            "path": path_value,
-                            "name": name,
-                            "id": api_id,
-                            "display": endpoint,
-                        }
-                    )
-
-                return {
-                    "total_count": len(endpoints),
-                    "filtered_count": len(filtered_endpoints),
-                    "filters": {
-                        "method": method_filter,
-                        "path": path_filter,
-                        "name": name_filter,
-                        "query": query_filter,
-                    },
-                    "endpoints": results,
-                }
-            except Exception as exc:  # pragma: no cover - 容错分支
-                return error_response("search_error", f"搜索API端点失败: {exc}", str(exc))
+            response = context.query_service.search_api_endpoints(request)
+            return response.to_dict()
 
