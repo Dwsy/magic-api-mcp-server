@@ -10,7 +10,7 @@ import re
 # 添加当前目录到Python路径
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
-from magic_api_debug_client import MagicAPIDebugClient
+from cli.magic_api_debug_client import MagicAPIDebugClient
 
 
 def test_client_id_generation():

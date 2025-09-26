@@ -1,9 +1,8 @@
 #!/usr/bin/env python3
 """extract_class_methods.py 工具的测试脚本。"""
 
-import json
 import unittest
-from unittest.mock import Mock, patch, mock_open
+from unittest.mock import Mock, patch
 import sys
 import os
 import requests
@@ -11,7 +10,7 @@ import requests
 # 添加父目录到路径，以便导入模块
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from extract_class_methods import (
+from cli.extract_class_methods import (
     MagicAPIClassExplorerError,
     MagicAPIClassClient,
     MagicAPIClassExplorer,

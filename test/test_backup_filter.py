@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """测试备份过滤功能。"""
 
-from backup_manager import filter_backups
+from cli.backup_manager import filter_backups
 
 # 测试数据
 test_backups = [

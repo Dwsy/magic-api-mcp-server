@@ -4,7 +4,7 @@ Magic-API 资源管理器修复测试脚本
 测试修复后的功能是否正常工作
 """
 
-from magic_api_resource_manager import MagicAPIResourceManager
+from cli.magic_api_resource_manager import MagicAPIResourceManager
 
 
 def test_fixed_functionality():

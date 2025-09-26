@@ -10,7 +10,7 @@ import os
 # 添加当前目录到Python路径，以便导入模块
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
-from magic_api_debug_client import MagicAPIDebugClient
+from cli.magic_api_debug_client import MagicAPIDebugClient
 
 
 async def test_breakpoint_commands():
@@ -76,7 +76,7 @@ def test_preprocessing():
     """测试命令预处理功能"""
     print("\n🧪 测试命令预处理...")
 
-    from magic_api_debug_client import preprocess_command
+    from cli.magic_api_debug_client import preprocess_command
 
     test_cases = [
         ("test api/test", "test /api/test"),

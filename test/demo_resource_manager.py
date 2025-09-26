@@ -4,7 +4,7 @@ Magic-API 资源管理器演示脚本
 演示如何使用 MagicAPIResourceManager 进行目录分组管理
 """
 
-from magic_api_resource_manager import MagicAPIResourceManager
+from cli.magic_api_resource_manager import MagicAPIResourceManager
 
 
 def demo_resource_manager():
