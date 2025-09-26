@@ -147,7 +147,7 @@ final_output/
 # Files to be ignored permanently
 genmagicscript.md
 test/test_mcp_tools.py
-test_mcp_tools.py
+test/test_mcp_tools.py
 
 # Cache directories
 .uv-cache/
