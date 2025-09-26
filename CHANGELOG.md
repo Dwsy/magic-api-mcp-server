@@ -1,80 +1,67 @@
-# Changelog
+# 更新日志
 
-All notable changes to this project will be documented in this file.
+## [0.1.6] - 2025-09-26
 
-The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
-and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+### 新增功能
+- 新增完整的架构分层：domain、services、tools、utils、ws模块
+- 添加领域模型和DTO层，实现数据传输标准化
+- 新增WebSocket通信模块，支持实时调试和消息处理
+- 添加工具助手模块，提供丰富的实用功能
+- 扩展服务层，实现业务逻辑封装和接口抽象
 
-## [0.1.0] - 2025-01-24
+### 修复问题
+- 优化构建流程，包含所有新模块和依赖
+- 修复包结构问题，确保所有组件正确打包
+- 改进模块导入和依赖管理
 
-### Added
-- Initial release of Magic-API MCP Server
-- Complete MCP (Model Context Protocol) implementation for Magic-API development
-- 10 comprehensive tool modules:
-  - **SystemTools**: System information and metadata
-  - **DocumentationTools**: Comprehensive Magic-API documentation and knowledge base
-  - **ApiTools**: Direct API calling and testing capabilities
-  - **ResourceManagementTools**: Full CRUD operations for Magic-API resources
-  - **QueryTools**: Efficient resource querying and retrieval
-  - **DebugTools**: Advanced debugging with breakpoints and step execution
-  - **SearchTools**: Content search across API scripts and TODO comments
-  - **BackupTools**: Complete backup and restore functionality
-  - **ClassMethodTools**: Java class and method introspection
-  - **CodeGenerationTools**: Code generation templates (currently disabled)
-- Docker support with production and development configurations
-- Comprehensive Makefile for easy Docker operations
-- Full documentation with usage examples and MCP prompts
-- Support for multiple tool combinations (full, minimal, development, production, etc.)
-- Command-line interface with rich argument parsing
-- Environment variable configuration for all settings
-
-### Features
-- **Multi-tool Architecture**: Modular design allowing flexible tool combinations
-- **Rich Documentation**: Extensive inline documentation and usage examples
-- **MCP Integration**: Full Model Context Protocol compliance
-- **Docker Ready**: Complete containerization with development and production setups
-- **Comprehensive Testing**: Built-in health checks and connection testing
-- **Developer Friendly**: Hot reload support in development mode
-
-### Technical Details
-- **Python Version**: Requires Python 3.13+
-- **Key Dependencies**: FastMCP, Pydantic, Requests, WebSockets
-- **Architecture**: Modular tool registry system with composable tools
-- **Deployment**: Supports uvx, local Python, and Docker deployments
-
-### Known Limitations
-- CodeGenerationTools currently disabled, enable by uncommenting in __init__.py
-- Requires active Magic-API service for full functionality
-- WebSocket debugging features require WebSocket connection to Magic-API
+### 技术改进
+- 重构项目架构为DDD（领域驱动设计）模式
+- 增强代码组织结构，提升可维护性
+- 完善模块化设计，便于功能扩展
 
 ---
 
-## Development
+## [0.1.5] - 2025-09-26
 
-### Building from Source
-```bash
-# Install uv (if not already installed)
-pip install uv
+### 新增功能
+- 添加日志配置模块 (logging_config.py)
+- 增强类方法检索功能，支持更精确的API查询
+- 改进资源管理器，优化内存使用和性能
+- 新增查询服务，支持复杂条件过滤
+- 扩展工具助手，提供更多实用功能
 
-# Clone and setup
-git clone <repository-url>
-cd magic-api-mcp-server
-uv sync
+### 修复问题
+- 修复WebSocket连接稳定性问题
+- 优化异步HTTP请求处理机制
+- 改进断点调试功能的可靠性
+- 修复资源同步过程中的数据一致性问题
 
-# Run locally
-uv run python run_mcp.py
-```
+### 技术改进
+- 升级依赖项版本，提高兼容性和安全性
+- 重构代码结构，提升可维护性
+- 优化构建流程，减少发布时间
+- 增强错误处理和异常捕获机制
 
-### Docker Development
-```bash
-# Quick start development environment
-make quick-start
-
-# Production deployment
-make deploy
-```
+### 文档更新
+- 更新README.md，完善安装和使用说明
+- 添加API文档，详细说明各模块功能
+- 补充测试用例和示例代码
 
 ---
 
-[Unreleased]: https://github.com/yourusername/magic-api-mcp-server/compare/v0.1.0...HEAD
-[0.1.0]: https://github.com/yourusername/magic-api-mcp-server/releases/tag/v0.1.0
+## [0.1.4] - 2025-09-26
+
+### 新增功能
+- 添加Windows平台readline库支持 (pyreadline3)
+
+### 修复问题
+- 修复跨平台兼容性问题
+
+---
+
+## [0.1.3] - 2025-09-26
+
+### 新增功能
+- 初始版本发布
+- 实现Magic-API MCP服务器核心功能
+- 支持API调试、资源管理和工具集成
