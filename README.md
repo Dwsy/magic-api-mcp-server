@@ -305,6 +305,46 @@ Magic-API MCP 服务器为 Magic-API 开发提供以下专业工具：
 API调用和测试工具，支持灵活的接口调用和测试
 - **call_magic_api**: 调用Magic-API接口并返回请求结果，支持GET、POST、PUT、DELETE等HTTP方法
 
+##### 🔍 API响应智能检查
+Magic-API MCP Server 支持多种API响应格式的智能成功/失败判断：
+
+**优先级顺序**：
+1. 🚀 **`message="success"`** - 最高优先级，直接匹配message字段是否等于"success"
+2. 🔢 **Code字段检查** - 检查code字段是否等于配置的成功码（默认1，可配置）
+3. 📊 **Status字段检查** - 检查status字段（某些自定义响应格式）
+4. ❌ **错误字段检查** - 检查是否存在error、exception、failure等错误字段
+5. ✅ **默认成功** - 兼容模式，对没有明确标识的响应默认视为成功
+
+**支持的响应格式示例**：
+```json
+// 标准格式
+{"code": 1, "message": "success", "data": {...}}
+
+// 自定义状态码
+{"code": 200, "message": "ok", "data": {...}}
+
+// Message优先（最高优先级）
+{"code": 500, "message": "success", "data": {...}} // 仍然成功！
+
+{"code": 1, "message": "operation failed", "data": {...}} // 失败！
+
+// 自定义格式
+{"status": 1, "msg": "success", "body": {...}}
+
+// 错误响应
+{"code": 500, "message": "Internal Error", "data": {...}}
+{"error": "something went wrong"}
+```
+
+**配置方式**：
+```bash
+# 通过环境变量配置成功状态码和消息
+MAGIC_API_SUCCESS_CODE=200
+MAGIC_API_SUCCESS_MESSAGE=ok
+MAGIC_API_INVALID_CODE=400
+MAGIC_API_EXCEPTION_CODE=500
+```
+
 #### 3.4 资源管理工具 (ResourceManagementTools)
 完整的资源管理系统，支持资源树查询与批量操作
 - **get_resource_tree**: 获取资源树，支持过滤、导出多种格式（JSON/CSV/树形），向后兼容CSV参数
@@ -400,6 +440,10 @@ Java类和方法检索工具
 | MAGIC_API_TOKEN | Magic-API 认证令牌 | 字符串 | 无 |
 | MAGIC_API_AUTH_ENABLED | 是否启用认证 | true/false | false |
 | MAGIC_API_TIMEOUT_SECONDS | 请求超时时间（秒） | 数字 | 30.0 |
+| MAGIC_API_SUCCESS_CODE | API成功状态码 | 数字 | 1 |
+| MAGIC_API_SUCCESS_MESSAGE | API成功消息文本 | 字符串 | success |
+| MAGIC_API_INVALID_CODE | 参数验证失败状态码 | 数字 | 0 |
+| MAGIC_API_EXCEPTION_CODE | 系统异常状态码 | 数字 | -1 |
 | LOG_LEVEL | 日志级别 | DEBUG/INFO/WARNING/ERROR | INFO |
 | FASTMCP_TRANSPORT | FastMCP 传输协议 | stdio/http | stdio |
 
@@ -501,6 +545,10 @@ docker stop magic-api-mcp-server
 | `MAGIC_API_TOKEN` | 认证令牌 | 无 |
 | `MAGIC_API_AUTH_ENABLED` | 是否启用认证 | `false` |
 | `MAGIC_API_TIMEOUT_SECONDS` | 请求超时时间 | `30.0` |
+| `MAGIC_API_SUCCESS_CODE` | API成功状态码 | `1` |
+| `MAGIC_API_SUCCESS_MESSAGE` | API成功消息文本 | `success` |
+| `MAGIC_API_INVALID_CODE` | 参数验证失败状态码 | `0` |
+| `MAGIC_API_EXCEPTION_CODE` | 系统异常状态码 | `-1` |
 | `LOG_LEVEL` | 日志级别 | `INFO` |
 | `FASTMCP_TRANSPORT` | MCP传输协议 | `stdio` |
 

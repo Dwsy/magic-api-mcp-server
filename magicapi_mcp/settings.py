@@ -27,6 +27,12 @@ DEFAULT_WS_LOG_CAPTURE_WINDOW = 2
 DEFAULT_WS_RECONNECT_INTERVAL = 5.0
 DEFAULT_DEBUG_TIMEOUT = 600.0
 
+# API响应相关默认配置
+DEFAULT_SUCCESS_CODE = 1
+DEFAULT_SUCCESS_MESSAGE = "success"
+DEFAULT_INVALID_CODE = 0
+DEFAULT_EXCEPTION_CODE = -1
+
 
 @dataclass(slots=True)
 class MagicAPISettings:
@@ -47,6 +53,12 @@ class MagicAPISettings:
     ws_log_capture_window: float = DEFAULT_WS_LOG_CAPTURE_WINDOW
     ws_reconnect_interval: float = DEFAULT_WS_RECONNECT_INTERVAL
 
+    # API响应状态码配置（支持自定义状态码）
+    api_success_code: int = DEFAULT_SUCCESS_CODE
+    api_success_message: str = DEFAULT_SUCCESS_MESSAGE
+    api_invalid_code: int = DEFAULT_INVALID_CODE
+    api_exception_code: int = DEFAULT_EXCEPTION_CODE
+
     @classmethod
     def from_env(cls, env: Mapping[str, str] | None = None) -> "MagicAPISettings":
         """从环境变量加载配置。"""
@@ -64,6 +76,12 @@ class MagicAPISettings:
         ws_capture_window_raw = env.get("MAGIC_API_WS_CAPTURE_WINDOW")
         ws_reconnect_raw = env.get("MAGIC_API_WS_RECONNECT_INTERVAL")
         debug_timeout_raw = env.get("MAGIC_API_DEBUG_TIMEOUT_SECONDS")
+
+        # API响应状态码配置
+        api_success_code_raw = env.get("MAGIC_API_SUCCESS_CODE")
+        api_success_message = env.get("MAGIC_API_SUCCESS_MESSAGE", DEFAULT_SUCCESS_MESSAGE)
+        api_invalid_code_raw = env.get("MAGIC_API_INVALID_CODE")
+        api_exception_code_raw = env.get("MAGIC_API_EXCEPTION_CODE")
 
         timeout_raw = env.get("MAGIC_API_TIMEOUT_SECONDS")
         try:
@@ -91,6 +109,22 @@ class MagicAPISettings:
         except (TypeError, ValueError):
             debug_timeout_seconds = DEFAULT_DEBUG_TIMEOUT
 
+        # 解析API响应状态码
+        try:
+            api_success_code = int(api_success_code_raw) if api_success_code_raw else DEFAULT_SUCCESS_CODE
+        except (TypeError, ValueError):
+            api_success_code = DEFAULT_SUCCESS_CODE
+
+        try:
+            api_invalid_code = int(api_invalid_code_raw) if api_invalid_code_raw else DEFAULT_INVALID_CODE
+        except (TypeError, ValueError):
+            api_invalid_code = DEFAULT_INVALID_CODE
+
+        try:
+            api_exception_code = int(api_exception_code_raw) if api_exception_code_raw else DEFAULT_EXCEPTION_CODE
+        except (TypeError, ValueError):
+            api_exception_code = DEFAULT_EXCEPTION_CODE
+
         return cls(
             base_url=base_url,
             ws_url=ws_url,
@@ -106,6 +140,10 @@ class MagicAPISettings:
             ws_log_history_size=ws_log_history_size,
             ws_log_capture_window=ws_log_capture_window,
             ws_reconnect_interval=ws_reconnect_interval,
+            api_success_code=api_success_code,
+            api_success_message=api_success_message,
+            api_invalid_code=api_invalid_code,
+            api_exception_code=api_exception_code,
         )
 
     def inject_auth(self, headers: MutableMapping[str, str]) -> MutableMapping[str, str]:
