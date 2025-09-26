@@ -110,7 +110,7 @@ class DocumentationTools:
             topic: Annotated[
                 str,
                 Field(description="要查询的语法主题，如'variables'、'loops'、'functions'等；使用'full'获取完整语法规则", min_length=1)
-            ],
+            ]= "full",
             locale: Annotated[
                 str,
                 Field(description="文档语言选择", default="zh-CN")
@@ -225,7 +225,18 @@ class DocumentationTools:
         )
         def best_practices() -> List[Dict[str, Any]]:
             """获取最佳实践列表"""
-            return get_best_practices()
+            practices_list = get_best_practices()
+            # 将字符串列表转换为字典列表格式
+            return [
+                {
+                    "id": i + 1,
+                    "title": practice,
+                    "description": practice,
+                    "category": "best_practice",
+                    "priority": "high"
+                }
+                for i, practice in enumerate(practices_list)
+            ]
 
         @mcp_app.tool(
             name="get_common_pitfalls",
@@ -240,7 +251,18 @@ class DocumentationTools:
         )
         def pitfalls() -> List[Dict[str, Any]]:
             """获取常见坑点列表"""
-            return get_pitfalls()
+            pitfalls_list = get_pitfalls()
+            # 将字符串列表转换为字典列表格式
+            return [
+                {
+                    "id": i + 1,
+                    "title": pitfall,
+                    "description": pitfall,
+                    "category": "common_pitfall",
+                    "severity": "medium"
+                }
+                for i, pitfall in enumerate(pitfalls_list)
+            ]
 
         @mcp_app.tool(
             name="get_development_workflow",
