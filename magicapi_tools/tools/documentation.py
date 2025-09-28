@@ -348,126 +348,55 @@ class DocumentationTools:
             return response
 
         @mcp_app.tool(
-            name="get_module_api_docs",
-            description="获取指定Magic-API内置模块的API文档",
-            tags={"modules", "api", "reference", "built-in"},
-            meta={"version": "2.1", "category": "modules", "author": "system"},
+            name="get_documentation",
+            description="获取Magic-API各类文档，包括模块API、函数库、扩展功能、配置选项和插件系统文档。这是一个统一的文档查询工具，可替代多个专门的文档查询工具，如 get_module_api_docs、get_function_docs、get_extension_docs、get_config_docs 和 get_plugin_docs。",
+            tags={"documentation", "api", "reference", "modules", "functions", "extensions", "config", "plugins", "unified"},
+            meta={"version": "2.2", "category": "documentation", "author": "system"},
             annotations={
-                "title": "模块API文档查询",
+                "title": "统一文档查询",
                 "readOnlyHint": True,
                 "openWorldHint": False
             }
         )
-        def module_api(
-            module_name: Annotated[
+        def unified_docs(
+            name_or_category: Annotated[
                 str,
-                Field(description="模块名称，如'db'、'http'、'response'、'request'、'log'、'env'、'magic'", min_length=1)
+                Field(description="模块名/函数分类/扩展类型/配置分类/插件名称。根据 doc_type 参数提供相应的名称，如当 doc_type 为 module 时提供模块名，为 function 时提供函数分类等。", min_length=1)
+            ],
+            doc_type: Annotated[
+                str,
+                Field(description="文档类型，可选值: module(模块API), function(函数库), extension(类型扩展), config(配置), plugin(插件)。使用 module 获取内置模块API文档，如 db, http, request, response, log, env, cache, magic 等模块。使用 function 获取内置函数库文档，按分类查询如 aggregation, date, string, array, math, other, range。使用 extension 获取类型扩展功能文档，如 object, number, collection, string, date 等类型的扩展方法。使用 config 获取配置选项说明，如 spring_boot, database, cache, cluster, cors 等。使用 plugin 获取插件系统文档，如 redis, mongodb, elasticsearch, swagger 等插件。", default="module")
             ]
         ) -> Dict[str, Any]:
-            module_info = get_module_api(module_name)
-            if not module_info:
-                available_modules = list(MODULES_KNOWLEDGE.keys())
-                return error_response("not_found", f"未找到模块 '{module_name}' 的API文档。可用模块：{', '.join(available_modules)}")
-            return module_info
-
-        @mcp_app.tool(
-            name="list_available_modules",
-            description="获取所有可用的Magic-API内置模块列表",
-            tags={"modules", "list", "overview", "built-in"},
-            meta={"version": "2.1", "category": "modules", "author": "system"},
-            annotations={
-                "title": "模块列表查询",
-                "readOnlyHint": True,
-                "openWorldHint": False
-            }
-        )
-        def list_modules() -> Dict[str, Any]:
-            """获取所有可用模块的详细信息"""
-            from magicapi_tools.utils.kb_modules import list_available_modules, get_auto_import_modules
-            return {
-                "all_modules": list_available_modules(),
-                "auto_import_modules": get_auto_import_modules(),
-                "module_count": len(list_available_modules())
-            }
-
-        @mcp_app.tool(
-            name="get_function_docs",
-            description="获取Magic-API内置函数库文档",
-            tags={"functions", "api", "reference", "built-in"},
-            meta={"version": "2.1", "category": "functions", "author": "system"},
-            annotations={
-                "title": "函数库文档查询",
-                "readOnlyHint": True,
-                "openWorldHint": False
-            }
-        )
-        def function_docs(
-            category: Annotated[
-                Optional[str],
-                Field(description="函数分类，可选值: aggregation, date, string, array, math, other, range")
-            ] = None
-        ) -> Dict[str, Any]:
-            return get_function_docs(category)
-
-        @mcp_app.tool(
-            name="get_extension_docs",
-            description="获取Magic-API类型扩展功能文档",
-            tags={"extensions", "types", "api", "enhancements"},
-            meta={"version": "2.1", "category": "extensions", "author": "system"},
-            enabled=False,
-            annotations={
-                "title": "类型扩展文档查询",
-                "readOnlyHint": True,
-                "openWorldHint": False
-            }
-        )
-        def extension_docs(
-            type_name: Annotated[
-                Optional[str],
-                Field(description="类型名称，可选值: object, number, collection, string, date")
-            ] = None
-        ) -> Dict[str, Any]:
-            return get_extension_docs(type_name)
-
-        @mcp_app.tool(
-            name="get_config_docs",
-            description="获取Magic-API配置相关文档",
-            tags={"config", "settings", "reference", "configuration"},
-            meta={"version": "2.1", "category": "config", "author": "system"},
-            enabled=False,
-            annotations={
-                "title": "配置文档查询",
-                "readOnlyHint": True,
-                "openWorldHint": False
-            }
-        )
-        def config_docs(
-            category: Annotated[
-                Optional[str],
-                Field(description="配置分类，可选值: spring_boot, editor_config, database, cache, cluster, cors, debug, backup")
-            ] = None
-        ) -> Dict[str, Any]:
-            return get_config_docs(category)
-
-        @mcp_app.tool(
-            name="get_plugin_docs",
-            description="获取Magic-API插件系统文档",
-            tags={"plugins", "extensions", "reference", "add-ons"},
-            meta={"version": "2.1", "category": "plugins", "author": "system"},
-            enabled=False,
-            annotations={
-                "title": "插件文档查询",
-                "readOnlyHint": True,
-                "openWorldHint": False
-            }
-        )
-        def plugin_docs(
-            plugin_name: Annotated[
-                Optional[str],
-                Field(description="插件名称，可选值: cluster, task, redis, mongodb, elasticsearch, swagger, springdoc, git, nebula")
-            ] = None
-        ) -> Dict[str, Any]:
-            return get_plugin_docs(plugin_name)
+            """
+            获取各种类型的文档
+            
+            这是一个统一的文档查询工具，整合了之前多个专门的文档查询功能。
+            通过 doc_type 参数指定要查询的文档类型，name_or_category 参数提供具体的模块名、分类名等。
+            
+            使用示例：
+            - 查询db模块文档: doc_type="module", name_or_category="db"
+            - 查询字符串函数: doc_type="function", name_or_category="string"
+            - 查询对象扩展: doc_type="extension", name_or_category="object"
+            - 查询配置项: doc_type="config", name_or_category="spring_boot"
+            - 查询插件: doc_type="plugin", name_or_category="redis"
+            """
+            if doc_type == "module":
+                module_info = get_module_api(name_or_category)
+                if not module_info:
+                    available_modules = list(MODULES_KNOWLEDGE.keys())
+                    return error_response("not_found", f"未找到模块 '{name_or_category}' 的API文档。可用模块：{', '.join(available_modules)}")
+                return module_info
+            elif doc_type == "function":
+                return get_function_docs(name_or_category)
+            elif doc_type == "extension":
+                return get_extension_docs(name_or_category)
+            elif doc_type == "config":
+                return get_config_docs(name_or_category)
+            elif doc_type == "plugin":
+                return get_plugin_docs(name_or_category)
+            else:
+                return error_response("invalid_type", f"无效的文档类型 '{doc_type}'。支持的类型：module, function, extension, config, plugin")
 
         @mcp_app.tool(
             name="get_examples",
@@ -575,7 +504,7 @@ class DocumentationTools:
             ],
             category: Annotated[
                 Optional[str],
-                Field(description="限定搜索分类，可选值: syntax, modules, functions, extensions, config, plugins, practices, examples")
+                Field(description="限定搜索分类，可选值: syntax, modules, functions, extensions, config, plugins, practices, examples, web_docs")
             ] = None
         ) -> Dict[str, Any]:
             results = []
@@ -642,6 +571,13 @@ class DocumentationTools:
                         "content": result.get("content"),
                         "type": "实践"
                     })
+
+            # 搜索 web-docs markdown文档
+            if not category or category == "web_docs":
+                from magicapi_tools.utils.kb_web_docs import search_web_docs_by_keyword
+                web_docs_results = search_web_docs_by_keyword(keyword)
+                for result in web_docs_results:
+                    results.append(result)
 
             return {
                 "keyword": keyword,
