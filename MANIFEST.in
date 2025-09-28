@@ -10,3 +10,4 @@ recursive-include magicapi_tools/services *.py
 recursive-include magicapi_tools/utils *.py
 recursive-include magicapi_tools/tools *.py
 recursive-include magicapi_tools/ws *.py
+recursive-include magicapi_tools/web-docs *

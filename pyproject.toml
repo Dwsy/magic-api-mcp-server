@@ -51,6 +51,9 @@ Changelog = "https://github.com/Dwsy/magic-api-mcp-server/blob/main/CHANGELOG.md
 [tool.setuptools.packages.find]
 include = ["magicapi_mcp*", "magicapi_tools*"]
 
+[tool.setuptools.package-data]
+magicapi_tools = ["web-docs/**/*"]
+
 [dependency-groups]
 dev = [
     "twine>=6.2.0",
