@@ -25,7 +25,7 @@ from .api import ApiTools
 from .backup import BackupTools
 from .class_method import ClassMethodTools
 # from .code_generation import CodeGenerationTools
-from .debug import DebugTools
+# from .debug import DebugTools  # 已合并到 DebugAPITools
 from .documentation import DocumentationTools
 from .query import QueryTools
 from .resource import ResourceManagementTools
@@ -37,7 +37,7 @@ __all__ = [
     "BackupTools",
     "ClassMethodTools",
     # "CodeGenerationTools",
-    "DebugTools",
+    # "DebugTools",  # 已合并到 DebugAPITools
     "DocumentationTools",
     "QueryTools",
     "MagicAPIResourceTools",

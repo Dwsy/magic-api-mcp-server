@@ -10,7 +10,7 @@ from magicapi_tools.tools import ApiTools
 from magicapi_tools.tools import BackupTools
 from magicapi_tools.tools import ClassMethodTools
 # from magicapi_tools.tools import CodeGenerationTools
-from magicapi_tools.tools import DebugTools
+# from magicapi_tools.tools import DebugTools  # 已合并到 DebugAPITools
 from magicapi_tools.tools import DocumentationTools
 from magicapi_tools.tools import QueryTools
 from magicapi_tools.tools import ResourceManagementTools
@@ -179,8 +179,8 @@ class ToolComposer:
             "backup": BackupTools(),
             "class_method": ClassMethodTools(),
             "search": SearchTools(),
-            "debug": DebugTools(),
-            "debug_api": DebugAPITools(),
+            "debug": DebugAPITools(),  # 使用合并后的DebugAPITools作为debug工具
+            # "debug_api": DebugAPITools(),  # 移除重复注册，避免工具重复警告
             # "code_generation": CodeGenerationTools(),
             "system": SystemTools(),
         }
@@ -331,16 +331,16 @@ class ToolComposer:
         # 为debug_api模块提供特定描述，因为它是新添加的
         module_info = {}
         for name, module in self.modules.items():
-            if name == "debug_api":
-                module_info[name] = {
-                    "class": module.__class__.__name__,
-                    "description": "断点调试API工具模块，提供超时控制、断点状态轮询和步进控制功能"
-                }
-            else:
-                module_info[name] = {
-                    "class": module.__class__.__name__,
-                    "description": getattr(module, "__doc__", "").strip() or "No description",
-                }
+                if name == "debug_api":
+                    module_info[name] = {
+                        "class": module.__class__.__name__,
+                        "description": "统一的调试工具模块，整合基础调试和断点控制功能，支持异步调用、会话管理和超时监听"
+                    }
+                else:
+                    module_info[name] = {
+                        "class": module.__class__.__name__,
+                        "description": getattr(module, "__doc__", "").strip() or "No description",
+                    }
         return module_info
 
     def recommend_composition(self, scenario: str = None, preferences: Dict[str, Any] = None) -> Dict[str, Any]:
