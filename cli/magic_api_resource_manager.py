@@ -280,20 +280,7 @@ def main():
                 print("❌ 获取分组列表失败")
             return
 
-        # 3. 创建API接口
-        elif actions['create_api']:
-            api_info = actions['create_api']
-            print(f"\n📝 创建API接口: {api_info['name']}")
-            file_id = manager.create_api_file(
-                group_id=api_info['group_id'],
-                name=api_info['name'],
-                method=api_info['method'],
-                path=api_info['path'],
-                script=api_info['script']
-            )
-            if file_id:
-                print(f"✅ API接口创建成功: {api_info['name']} (ID: {file_id})")
-            return
+        # 3. 创建API接口\n        elif actions['create_api']:\n            api_info = actions['create_api']\n            print(f\"\\n📝 创建API接口: {api_info['name']}\")\n            result = manager.create_api_file(\n                group_id=api_info['group_id'],\n                name=api_info['name'],\n                method=api_info['method'],\n                path=api_info['path'],\n                script=api_info['script']\n            )\n            if result:\n                if isinstance(result, dict) and 'id' in result:\n                    file_id = result['id']\n                    full_path = result.get('full_path', api_info['path'])\n                    print(f\"✅ API接口创建成功: {api_info['name']} (ID: {file_id})\")\n                    print(f\"🌐 完整路径: {full_path}\")\n                else:\n                    # 向后兼容：如果返回的是字符串ID\n                    file_id = result\n                    print(f\"✅ API接口创建成功: {api_info['name']} (ID: {file_id})\")\n            return
 
         # 4. 创建分组
         if actions['create_group']:
