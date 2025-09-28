@@ -15,7 +15,7 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Annotated, Any, Dict, Optional
+from typing import TYPE_CHECKING, Annotated, Any, Dict, Literal, Optional
 
 from pydantic import Field
 
@@ -72,20 +72,20 @@ class ClassMethodTools:
                 Field(description="搜索模式：关键词或正则表达式")
             ],
             search_type: Annotated[
-                str,
-                Field(description="搜索类型：keyword（关键词）或 regex（正则表达式）", choices=["keyword", "regex"])
+                Literal["keyword", "regex"],
+                Field(description="搜索类型：keyword（关键词）或 regex（正则表达式）")
             ] = "keyword",
             case_sensitive: Annotated[
                 bool,
                 Field(description="是否区分大小写，默认false")
             ] = False,
             logic: Annotated[
-                str,
-                Field(description="多关键词逻辑：and 或 or，默认or", choices=["and", "or"])
+                Literal["and", "or"],
+                Field(description="多关键词逻辑：and 或 or，默认or")
             ] = "or",
             scope: Annotated[
-                str,
-                Field(description="搜索范围：all（全部）、class（仅类名）、method（仅方法）、field（仅字段），默认all", choices=["all", "class", "method", "field"])
+                Literal["all", "class", "method", "field"],
+                Field(description="搜索范围：all（全部）、class（仅类名）、method（仅方法）、field（仅字段），默认all")
             ] = "all",
             exact: Annotated[
                 bool,
