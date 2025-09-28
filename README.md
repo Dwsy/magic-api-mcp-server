@@ -90,44 +90,18 @@ Magic-Script 是一种小众语言，具有独特的语法规则，不遵循标�
 
 ## 🛠️ 可用工具能力
 
-### 文档查询 (DocumentationTools)
-- **get_full_magic_script_syntax** ⚠️ [强制]: 获取完整的 Magic-Script 语法规则（代码编写前必须调用）
-- **get_script_syntax**: 获取 Magic-API 脚本语法说明
-- **get_development_workflow** ⚠️ [强制]: 获取 Magic-API 开发标准化工作流指南（API脚本开发前必须调用）
-- **search_knowledge** 🔍 [推荐]: 在知识库中进行全文搜索（不确定时优先使用）
-- **get_module_api**: 获取内置模块 API 文档 (db, http, request, response, log, env, cache, magic)
-- **get_function_docs**: 获取内置函数库文档
-- **get_best_practices**: 获取最佳实践指南
-- **get_pitfalls**: 获取常见问题和陷阱
-- **get_examples**: 获取具体代码示例和分类概览
+在本文档第 3 节中详细介绍了所有可用工具，包括：
+- **文档工具** (DocumentationTools): 语法、文档、示例、最佳实践等
+- **API 工具** (ApiTools): 接口调用和测试
+- **资源管理工具** (ResourceManagementTools): 资源的CRUD操作
+- **查询工具** (QueryTools): 资源检索
+- **调试工具** (DebugTools): 断点管理
+- **搜索工具** (SearchTools): 内容搜索
+- **备份工具** (BackupTools): 数据备份管理
+- **类方法工具** (ClassMethodTools): Java类和方法查询
+- **系统工具** (SystemTools): 系统元信息查询
 
-### API 调用 (ApiTools)
-- **call_magic_api**: 调用 Magic-API 接口，支持 GET/POST/PUT/DELETE 等所有 HTTP 方法
-
-### 资源管理 (ResourceManagementTools)
-- **get_resource_tree**: 获取完整的资源树结构
-- **save_api_endpoint**: 保存API接口（支持创建和更新，根据是否提供file_id自动判断）
-- **delete_resource**: 删除资源
-- **get_resource_detail**: 获取资源详细信息
-- **copy_resource**: 复制资源
-- **move_resource**: 移动资源到其他分组
-
-### 查询工具 (QueryTools)
-- **get_api_details_by_path**: 根据路径获取接口详细信息
-- **get_api_details_by_id**: 根据ID获取接口详细信息
-- **search_api_endpoints**: 搜索和过滤接口端点
-
-### 搜索工具 (SearchTools)
-- **search_api_scripts**: 在所有 API 脚本中搜索关键词
-- **search_todo_comments**: 搜索 TODO 注释
-
-### 备份工具 (BackupTools)
-- **list_backups**: 查看备份列表
-- **create_full_backup**: 创建完整备份
-- **rollback_backup**: 回滚到指定备份
-
-### 系统工具 (SystemTools)
-- **get_assistant_metadata**: 获取系统元信息和配置
+详情请参见下方第 3 节 "本项目 MCP 工具功能"。
 
 ## 📋 使用指南
 
@@ -138,7 +112,7 @@ Magic-Script 是一种小众语言，具有独特的语法规则，不遵循标�
 🔍 **当你不确定某个功能或语法时，优先使用搜索工具：**
 - 调用 `search_knowledge` 进行全文搜索，关键词可以是功能名称、语法关键词等
 - 例如：搜索"数据库连接"、"缓存使用"、"文件上传"等
-- 可以限定搜索分类：syntax(语法)、modules(模块)、functions(函数)等
+- 可以限定搜索分类：syntax(语法)、modules(模块)、functions(函数)、web_docs(文档)等
 
 ##### 最佳实践
 - 🔍 **遇到不确定的问题时，先搜索知识库**
@@ -228,29 +202,19 @@ content = prompt.messages[0].content.text
 - 培训新团队成员
 - 创建一致的开发环境
 
+#### 工具组合配置
 
+本项目支持多种工具组合，可根据需要选择：
 
-**工具组合使用场景**：
-
-| 场景 | 组合模式 | 适用环境 | 特点 |
-|------|----------|----------|------|
-| **新手学习** | `documentation_only` | 学习阶段 | 专注文档查询和语法学习 |
-| **API开发** | `development` | 开发环境 | 接口开发、测试和调试 |
-| **生产运维** | `production` | 生产环境 | 系统运维和资源管理 |
-| **问题调试** | `minimal` | 调试场景 | 问题排查，启用DEBUG日志 |
-
-**基础配置模板**：
-```json
-{
-  "mcpServers": {
-    "magic-api-server": {
-      "command": "uvx",
-      "args": ["magic-api-mcp-server@latest", "--composition", "{组合模式}", "--transport", "stdio"],
-      "timeout": 600
-    }
-  }
-}
-```
+- `full`: 完整工具集 - 适用于完整开发环境 (默认)
+- `minimal`: 最小工具集 - 适用于资源受限环境
+- `development`: 开发工具集 - 专注于开发调试
+- `production`: 生产工具集 - 生产环境稳定运行
+- `documentation_only`: 仅文档工具 - 文档查询和学习
+- `api_only`: 仅API工具 - 接口测试和调用
+- `backup_only`: 仅备份工具 - 数据备份和管理
+- `class_method_only`: 仅类方法工具 - Java类和方法查询
+- `search_only`: 仅搜索工具 - 快速搜索定位
 
 **工具组合使用场景**：
 
@@ -407,7 +371,7 @@ Java类和方法检索工具
 提供可复用的提示词模板，确保助手严格遵循 MCP 工具化流程
 - **magic_api_developer_guide**: 输出最新版“Magic-API 开发者助手”系统提示词，强调“仅依赖 MCP 工具”工作守则、六步工具工作流以及结构化输出要求
 
-### 3.12 工作流知识库亮点
+#### 3.12 工作流知识库亮点
 
 `magicapi_tools/utils/kb_practices.py` 新增 "mcp_tool_driven" 等工作流，调用 `get_development_workflow` 或 `get_practices_guide` 时可获取：
 - 🔍 **智能搜索驱动**：遇到不确定的问题时，优先调用 `search_knowledge` 工具进行知识库全文搜索，确保获取最新和准确的信息。
@@ -415,21 +379,7 @@ Java类和方法检索工具
 - api_script_development / diagnose / optimize / refactor 等场景化流程：提供原则说明、步骤拆解以及工具列表，确保在接口开发、故障排查、性能优化与重构中全程依赖 MCP 工具完成。
 - 结合 `magic_api_developer_guide` 提示词，可让大模型在对话中主动引用工具证据，输出可验证的结论。
 
-### 4. 工具组合配置
-
-本项目支持多种工具组合，可根据需要选择：
-
-- `full`: 完整工具集 - 适用于完整开发环境 (默认)
-- `minimal`: 最小工具集 - 适用于资源受限环境
-- `development`: 开发工具集 - 专注于开发调试
-- `production`: 生产工具集 - 生产环境稳定运行
-- `documentation_only`: 仅文档工具 - 文档查询和学习
-- `api_only`: 仅API工具 - 接口测试和调用
-- `backup_only`: 仅备份工具 - 数据备份和管理
-- `class_method_only`: 仅类方法工具 - Java类和方法查询
-- `search_only`: 仅搜索工具 - 快速搜索定位
-
-### 5. 环境变量
+### 4. 环境变量
 
 | 变量 | 用途 | 值 | 默认值 |
 |------|------|----|--------|
@@ -447,7 +397,7 @@ Java类和方法检索工具
 | LOG_LEVEL | 日志级别 | DEBUG/INFO/WARNING/ERROR | INFO |
 | FASTMCP_TRANSPORT | FastMCP 传输协议 | stdio/http | stdio |
 
-### 6. 本地运行方式
+### 5. 本地运行方式
 
 ```bash
 # 推荐方式：使用 uvx 运行最新版本（适用于已发布到 pip 的包）
@@ -466,7 +416,7 @@ uvx magic-api-mcp-server@latest --composition development
 MAGIC_API_BASE_URL=http://localhost:8080 uvx magic-api-mcp-server@latest
 ```
 
-### 7. Docker 运行方式
+### 6. Docker 运行方式
 
 #### 使用 Docker Compose (推荐)
 
@@ -620,7 +570,7 @@ docker-compose logs --tail=100 magic-api-mcp-server
 docker-compose down --rmi all --volumes
 ```
 
-### 8. 项目结构
+### 7. 项目结构
 
 ```
 magicapi_mcp/
@@ -648,7 +598,7 @@ magicapi_tools/
     └── resource_manager.py # 资源管理器
 ```
 
-### 9. 安装方式
+### 8. 安装方式
 
 #### 从 PyPI 安装（推荐）
 
