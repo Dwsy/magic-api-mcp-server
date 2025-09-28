@@ -1,22 +1,52 @@
-"""断点调试相关的MCP工具，包括超时处理和断点状态轮询功能。
+"""Magic-API 调试相关 MCP 工具。
 
-此模块提供：
-- 超时控制的API调用
+此模块提供强大的调试功能，支持：
+- 断点设置和管理
+- 单步执行控制
+- 变量检查和状态监控
+- 调试会话管理
+- WebSocket连接状态监控
+- 异步断点调试和超时处理
 - 断点状态轮询
-- 步过/单步调试功能
+- 会话ID管理
+
+主要工具：
+- call_magic_api_with_debug: 异步调用API并监听断点，返回会话ID
+- get_latest_breakpoint_status: 获取最新断点状态
+- resume_from_breakpoint: 恢复断点执行
+- step_over_breakpoint: 单步执行，越过当前断点
+- step_into_breakpoint: 步入当前断点
+- step_out_breakpoint: 步出当前函数
+- set_breakpoint: 在指定行号设置断点
+- remove_breakpoint: 移除指定断点
+- list_breakpoints: 列出所有断点
+- execute_debug_session: 执行完整的调试会话
+- get_debug_status: 获取当前调试状态
+- inspect_ws_environments: 检查WebSocket环境
+- get_websocket_status: 获取WebSocket连接状态
 """
 
 from __future__ import annotations
 
 import asyncio
+import json
 import time
-from typing import TYPE_CHECKING, Annotated, Any, Dict, Optional
+import uuid
+from typing import TYPE_CHECKING, Annotated, Any, Dict, List, Optional, Union
 
 from pydantic import Field
 
 from magicapi_tools.logging_config import get_logger
 from magicapi_tools.utils import error_response
+from magicapi_tools.ws import IDEEnvironment, MessageType, OpenFileContext
 from magicapi_tools.ws.debug_service import WebSocketDebugService
+from magicapi_tools.ws.observers import MCPObserver
+
+try:  # pragma: no cover - 运行环境缺失 fastmcp 时回退 Any
+    from fastmcp import Context, FastMCP
+except ImportError:  # pragma: no cover
+    Context = Any  # type: ignore[assignment]
+    FastMCP = Any  # type: ignore[assignment]
 
 if TYPE_CHECKING:
     from fastmcp import FastMCP
@@ -26,179 +56,118 @@ logger = get_logger('tools.debug_api')
 
 
 class DebugAPITools:
-    """断点调试工具模块，提供超时控制和状态轮询功能。"""
+    """统一的调试工具模块，整合基础调试和高级断点控制功能。"""
 
     def __init__(self):
-        self.timeout_duration = 1.0  # 默认1秒超时
+        self.timeout_duration = 10.0  # 默认10秒超时
+        self.debug_sessions = {}  # 存储调试会话信息
 
     def register_tools(self, mcp_app: "FastMCP", context: "ToolContext") -> None:  # pragma: no cover - 装饰器环境
         """注册断点调试相关工具。"""
 
         @mcp_app.tool(
-            name="call_magic_api_with_timeout",
-            description="调用 Magic-API 接口并返回请求结果，如果指定时间内没有响应则返回提示信息让客户端轮询断点状态。",
-            tags={"api", "call", "timeout", "debug"},
+            name="call_magic_api_with_debug",
+            description="异步调用Magic-API接口并监听断点，返回会话ID用于后续操作。支持10秒超时监听，遇到断点时返回断点信息和操作提示。",
+            tags={"api", "call", "debug", "async", "session"},
         )
-        def call_with_timeout(
+        async def call_with_debug(
+            path: Annotated[
+                str,
+                Field(description="API请求路径，如'/api/users'或'GET /api/users'")
+            ] = '/algorithms/narcissistic/narcissistic-algorithm-v2',
             method: Annotated[
                 str,
                 Field(description="HTTP请求方法，如'GET'、'POST'、'PUT'、'DELETE'等")
-            ],
-            path: Annotated[
-                Optional[str],
-                Field(description="API请求路径，如'/api/users'或'GET /api/users'")
-            ] = None,
-            api_id: Annotated[
-                Optional[str],
-                Field(description="可选的接口ID，如果提供则会自动获取对应的method和path")
+            ] = "GET",
+            data: Annotated[
+                Optional[Union[Any, str]],
+                Field(description="请求体数据，适用于POST/PUT等方法")
             ] = None,
             params: Annotated[
-                Optional[Any],
+                Optional[Union[Any, str]],
                 Field(description="URL查询参数")
             ] = None,
-            data: Annotated[
-                Optional[Any],
-                Field(description="请求体数据")
-            ] = None,
-            headers: Annotated[
-                Optional[Any],
-                Field(description="HTTP请求头")
-            ] = None,
+            breakpoints: Annotated[
+                Optional[Union[List[int], str]],
+                Field(description="断点行号列表，用于调试，如'[5,10,15]'")
+            ] = [5,6,7],
             timeout: Annotated[
                 float,
-                Field(description="超时时间（秒），默认为1秒")
-            ] = 1.0,
+                Field(description="超时时间（秒），默认为10秒")
+            ] = 10.0,
+            ctx: "Context" = None,
         ) -> Dict[str, Any]:
-            """
-            调用 Magic-API 接口，如果在指定时间内没有完成则返回提示信息，
-            让客户端调用 get_latest_breakpoint_status 工具来轮询断点状态。
-            """
-            import threading
-            from concurrent.futures import ThreadPoolExecutor, TimeoutError
+            """异步调用API并监听断点，返回会话ID用于后续操作。"""
+            # 生成4位会话ID
+            session_id = str(uuid.uuid4())[:4]
+            
+            # 参数清理：将空字符串转换为 None
+            if isinstance(data, str) and data.strip() == "":
+                data = None
+            if isinstance(params, str) and params.strip() == "":
+                params = None
+            if isinstance(breakpoints, str) and breakpoints.strip() == "":
+                breakpoints = None
 
-            # 更新超时时间
-            self.timeout_duration = timeout
+            # 初始化会话信息
+            self.debug_sessions[session_id] = {
+                "status": "starting",
+                "path": path,
+                "method": method,
+                "start_time": time.time(),
+                "timeout": timeout,
+                "breakpoints_hit": [],
+                "current_breakpoint": None,
+                "api_completed": False
+            }
 
-            # 准备调用参数
-            actual_method = method or "GET"
-            actual_path = path
-
-            # 如果提供了api_id，则优先使用api_id获取详细信息
-            if api_id:
-                ok, payload = context.http_client.api_detail(api_id)
-                if ok and payload:
-                    api_method = payload.get("method", "").upper()
-                    api_path = payload.get("path", "")
-                    if api_method and api_path:
-                        actual_method = api_method
-                        actual_path = api_path
-                    else:
-                        return error_response("invalid_id", f"接口ID {api_id} 无法获取有效的路径信息")
-                else:
-                    return error_response("id_not_found", f"无法找到接口ID {api_id} 的详细信息")
-
-            # 检查路径是否有效
-            if not actual_path:
-                return error_response("invalid_path", "无法确定请求路径，请提供 path 或 api_id")
-
-            # 整理headers
-            provided_headers = headers or {}
-            if isinstance(provided_headers, str):
-                # 如果是字符串，尝试解析为JSON
-                import json
-                try:
-                    provided_headers = json.loads(provided_headers)
-                except json.JSONDecodeError:
-                    return error_response("invalid_headers", "提供的headers不是有效的JSON格式")
-
-            # 启动一个线程来执行API调用
-            def execute_api_call():
-                try:
-                    context.ws_manager.ensure_running_sync()
-
-                    # 构建请求头
-                    script_id = provided_headers.get("Magic-Request-Script-Id") or api_id
-                    if not script_id:
-                        from magicapi_tools.ws.utils import resolve_script_id_by_path
-                        script_id = resolve_script_id_by_path(context.http_client, actual_path)
-
-                    breakpoint_header = provided_headers.get("Magic-Request-Breakpoints")
-                    from magicapi_tools.ws.utils import normalize_breakpoints
-                    normalized_breakpoints = normalize_breakpoints(breakpoint_header) if breakpoint_header else ""
-
-                    base_headers = {
-                        "Magic-Request-Script-Id": script_id,
-                        "Magic-Request-Breakpoints": normalized_breakpoints,
-                    }
-
-                    request_headers = context.ws_manager.build_request_headers(base_headers)
-                    request_headers.update({k: v for k, v in provided_headers.items() if v is not None})
-
-                    # 执行API调用
-                    ok, payload = context.http_client.call_api(
-                        actual_method,
-                        actual_path,
-                        params=params,
-                        data=data,
-                        headers=request_headers,
-                    )
-
-                    if not ok:
-                        detail_message = payload if isinstance(payload, str) else payload.get("detail") if isinstance(payload, dict) else None
-                        error_message = payload.get("message") if isinstance(payload, dict) else payload if isinstance(payload, str) else "调用接口失败"
-                        error_code = payload.get("code") if isinstance(payload, dict) else "api_error"
-                        return error_response(error_code, error_message, detail_message)
-
-                    # 等待一段时间以确保断点信息被处理
-                    time.sleep(0.1)
-
-                    # 检查断点状态
-                    debug_service: WebSocketDebugService = context.ws_debug_service
-                    status = debug_service.get_debug_status_tool()
-                    if status.get("success"):
-                        # 如果存在断点，返回断点状态
-                        if status.get("status", {}).get("breakpoints"):
-                            return {
-                                "message": "API调用已启动并遇到断点，请使用 get_latest_breakpoint_status 工具查询最新断点状态。",
-                                "status": "breakpoint_hit",
-                                "timeout": timeout,
-                                "breakpoint_status": status,
-                                "expected_next_action": "get_latest_breakpoint_status"
-                            }
-
-                    return {
-                        "success": True,
-                        "response": payload,
-                        "duration": 0.0,  # 实际持续时间未精确计算
-                    }
-                except Exception as e:
-                    logger.error(f"API调用执行错误: {e}")
-                    return error_response("api_execution_error", str(e))
-
-            # 在线程池中执行API调用
-            with ThreadPoolExecutor(max_workers=1) as executor:
-                future = executor.submit(execute_api_call)
-                try:
-                    # 等待结果，但不超过指定的超时时间
-                    result = future.result(timeout=timeout)
-                    return result
-                except TimeoutError:
-                    # 超时情况下，返回提示信息让客户端轮询断点状态
-                    return {
-                        "message": "API调用已启动，正在等待响应。请使用 get_latest_breakpoint_status 工具查询最新断点状态。",
-                        "status": "pending",
-                        "timeout": timeout,
-                        "expected_next_action": "get_latest_breakpoint_status"
-                    }
+            observer = MCPObserver(ctx) if ctx else None
+            if observer:
+                context.ws_manager.add_observer(observer)
+            
+            try:
+                if ctx:
+                    await ctx.info("🧪 启动异步调试会话", extra={"session_id": session_id, "path": path, "method": method})
+                    await ctx.report_progress(progress=0, total=100)
+                
+                # 异步调用API并监听断点
+                result = await self._async_debug_call(
+                    context, session_id, path, method, data, params, breakpoints, timeout, ctx
+                )
+                
+                if ctx:
+                    await ctx.report_progress(progress=100, total=100)
+                
+                return result
+                
+            except Exception as e:
+                logger.error(f"异步调试调用失败: {e}")
+                self.debug_sessions[session_id]["status"] = "error"
+                self.debug_sessions[session_id]["error"] = str(e)
+                return error_response("async_debug_error", f"异步调试调用失败: {str(e)}", {"session_id": session_id})
+            finally:
+                if observer:
+                    await asyncio.sleep(context.settings.ws_log_capture_window)
+                    context.ws_manager.remove_observer(observer)
 
         @mcp_app.tool(
             name="get_latest_breakpoint_status",
-            description="获取最新的断点调试状态，用于轮询断点执行情况。",
+            description="获取最新的断点调试状态，用于轮询断点执行情况。需要传入会话ID。",
             tags={"debug", "breakpoint", "status", "polling"},
         )
-        def get_breakpoint_status() -> Dict[str, Any]:
-            """获取最新的断点调试状态，用于轮询断点执行情况。"""
+        def get_breakpoint_status(
+            session_id: Annotated[
+                str,
+                Field(description="调试会话ID，由call_magic_api_with_debug返回")
+            ]
+        ) -> Dict[str, Any]:
+            """获取指定会话的最新断点调试状态。"""
             try:
+                # 检查会话是否存在
+                if session_id not in self.debug_sessions:
+                    return error_response("session_not_found", f"调试会话 {session_id} 不存在")
+                
+                session = self.debug_sessions[session_id]
                 context.ws_manager.ensure_running_sync()
 
                 # 获取WebSocket调试服务
@@ -208,9 +177,31 @@ class DebugAPITools:
                 status = debug_service.get_debug_status_tool()
 
                 if status.get("success"):
-                    # 增加一个标记，表示这是一个断点状态检查
+                    # 增加会话信息
+                    status["session_id"] = session_id
+                    status["session_info"] = session
                     status["is_breakpoint_status"] = True
                     status["timestamp"] = time.time()
+                    
+                    # 检查是否有断点
+                    breakpoints = status.get("status", {}).get("breakpoints", [])
+                    if breakpoints:
+                        session["current_breakpoint"] = breakpoints[0] if breakpoints else None
+                        session["status"] = "breakpoint_hit"
+                        status["available_actions"] = [
+                            "resume_from_breakpoint",
+                            "step_over_breakpoint", 
+                            "step_into_breakpoint",
+                            "step_out_breakpoint"
+                        ]
+                        status["message"] = "遇到断点，可以选择恢复执行或单步调试"
+                    elif session["api_completed"]:
+                        session["status"] = "completed"
+                        status["message"] = "断点调试结束，API返回完成"
+                    else:
+                        session["status"] = "running"
+                        status["message"] = "API正在执行中，请继续轮询"
+                    
                     return status
                 else:
                     return error_response("status_check_failed", "获取断点状态失败", status.get("error"))
@@ -220,12 +211,22 @@ class DebugAPITools:
 
         @mcp_app.tool(
             name="resume_from_breakpoint",
-            description="从当前断点恢复执行。",
+            description="从当前断点恢复执行，继续10秒超时监听。需要传入会话ID。",
             tags={"debug", "breakpoint", "resume"},
         )
-        async def resume_breakpoint() -> Dict[str, Any]:
-            """从当前断点恢复执行。"""
+        async def resume_breakpoint(
+            session_id: Annotated[
+                str,
+                Field(description="调试会话ID")
+            ]
+        ) -> Dict[str, Any]:
+            """从当前断点恢复执行，继续监听。"""
             try:
+                # 检查会话是否存在
+                if session_id not in self.debug_sessions:
+                    return error_response("session_not_found", f"调试会话 {session_id} 不存在")
+                
+                session = self.debug_sessions[session_id]
                 await context.ws_manager.ensure_running()
 
                 # 获取WebSocket调试服务
@@ -233,6 +234,13 @@ class DebugAPITools:
 
                 # 执行恢复操作
                 result = await debug_service.resume_breakpoint_tool()
+                
+                if result.get("success"):
+                    session["status"] = "resumed"
+                    # 继续监听10秒
+                    monitor_result = await self._monitor_breakpoint_with_timeout(context, session_id, 10.0)
+                    result.update(monitor_result)
+                
                 return result
             except Exception as e:
                 logger.error(f"恢复断点执行时出错: {e}")
@@ -240,12 +248,22 @@ class DebugAPITools:
 
         @mcp_app.tool(
             name="step_over_breakpoint",
-            description="单步执行，跳过当前断点。",
+            description="单步执行，跳过当前断点，继续10秒超时监听。需要传入会话ID。",
             tags={"debug", "breakpoint", "step", "over"},
         )
-        async def step_over() -> Dict[str, Any]:
-            """单步执行，跳过当前断点。"""
+        async def step_over(
+            session_id: Annotated[
+                str,
+                Field(description="调试会话ID")
+            ]
+        ) -> Dict[str, Any]:
+            """单步执行，跳过当前断点，继续监听。"""
             try:
+                # 检查会话是否存在
+                if session_id not in self.debug_sessions:
+                    return error_response("session_not_found", f"调试会话 {session_id} 不存在")
+                
+                session = self.debug_sessions[session_id]
                 await context.ws_manager.ensure_running()
 
                 # 获取WebSocket调试服务
@@ -253,6 +271,13 @@ class DebugAPITools:
 
                 # 执行单步跳过操作
                 result = await debug_service.step_over_tool()
+                
+                if result.get("success"):
+                    session["status"] = "stepped_over"
+                    # 继续监听10秒
+                    monitor_result = await self._monitor_breakpoint_with_timeout(context, session_id, 10.0)
+                    result.update(monitor_result)
+                
                 return result
             except Exception as e:
                 logger.error(f"单步跳过断点时出错: {e}")
@@ -260,12 +285,22 @@ class DebugAPITools:
 
         @mcp_app.tool(
             name="step_into_breakpoint",
-            description="步入当前断点（进入函数/方法内部）。",
+            description="步入当前断点（进入函数/方法内部），继续10秒超时监听。需要传入会话ID。",
             tags={"debug", "breakpoint", "step", "into"},
         )
-        async def step_into() -> Dict[str, Any]:
-            """步入当前断点（进入函数/方法内部）。"""
+        async def step_into(
+            session_id: Annotated[
+                str,
+                Field(description="调试会话ID")
+            ]
+        ) -> Dict[str, Any]:
+            """步入当前断点（进入函数/方法内部），继续监听。"""
             try:
+                # 检查会话是否存在
+                if session_id not in self.debug_sessions:
+                    return error_response("session_not_found", f"调试会话 {session_id} 不存在")
+                
+                session = self.debug_sessions[session_id]
                 await context.ws_manager.ensure_running()
 
                 # 获取WebSocket调试服务
@@ -274,22 +309,39 @@ class DebugAPITools:
                 # 发送步入指令 (step type 2)
                 script_id = debug_service._current_script_id()
                 if not script_id:
-                    return {"error": {"code": "script_id_missing", "message": "无法确定当前调试脚本"}}
+                    return error_response("script_id_missing", "无法确定当前调试脚本")
                 
                 await context.ws_manager.send_step_into(script_id, sorted(debug_service.breakpoints))
-                return {"success": True, "script_id": script_id, "step_type": "into"}
+                session["status"] = "stepped_into"
+                
+                # 继续监听10秒
+                monitor_result = await self._monitor_breakpoint_with_timeout(context, session_id, 10.0)
+                result = {"success": True, "script_id": script_id, "step_type": "into", "session_id": session_id}
+                result.update(monitor_result)
+                
+                return result
             except Exception as e:
                 logger.error(f"步入断点时出错: {e}")
                 return error_response("step_into_error", f"步入断点时出错: {str(e)}")
 
         @mcp_app.tool(
             name="step_out_breakpoint",
-            description="步出当前函数/方法（执行到当前函数结束）。",
+            description="步出当前函数/方法（执行到当前函数结束），继续10秒超时监听。需要传入会话ID。",
             tags={"debug", "breakpoint", "step", "out"},
         )
-        async def step_out() -> Dict[str, Any]:
-            """步出当前函数/方法（执行到当前函数结束）。"""
+        async def step_out(
+            session_id: Annotated[
+                str,
+                Field(description="调试会话ID")
+            ]
+        ) -> Dict[str, Any]:
+            """步出当前函数/方法（执行到当前函数结束），继续监听。"""
             try:
+                # 检查会话是否存在
+                if session_id not in self.debug_sessions:
+                    return error_response("session_not_found", f"调试会话 {session_id} 不存在")
+                
+                session = self.debug_sessions[session_id]
                 await context.ws_manager.ensure_running()
 
                 # 获取WebSocket调试服务
@@ -298,10 +350,17 @@ class DebugAPITools:
                 # 发送步出指令 (step type 3)
                 script_id = debug_service._current_script_id()
                 if not script_id:
-                    return {"error": {"code": "script_id_missing", "message": "无法确定当前调试脚本"}}
+                    return error_response("script_id_missing", "无法确定当前调试脚本")
                 
                 await context.ws_manager.send_step_out(script_id, sorted(debug_service.breakpoints))
-                return {"success": True, "script_id": script_id, "step_type": "out"}
+                session["status"] = "stepped_out"
+                
+                # 继续监听10秒
+                monitor_result = await self._monitor_breakpoint_with_timeout(context, session_id, 10.0)
+                result = {"success": True, "script_id": script_id, "step_type": "out", "session_id": session_id}
+                result.update(monitor_result)
+                
+                return result
             except Exception as e:
                 logger.error(f"步出断点时出错: {e}")
                 return error_response("step_out_error", f"步出断点时出错: {str(e)}")
@@ -375,3 +434,250 @@ class DebugAPITools:
             except Exception as e:
                 logger.error(f"列出断点时出错: {e}")
                 return error_response("list_breakpoints_error", f"列出断点时出错: {str(e)}")
+
+        # 从 debug.py 合并过来的工具
+        @mcp_app.tool(
+            name="execute_debug_session",
+            description="执行完整的调试会话，包括断点设置和状态监控。",
+            tags={"debug", "session", "execution"},
+        )
+        def execute_debug_session(
+            script_id: Annotated[
+                str,
+                Field(description="要调试的脚本文件ID，如'1234567890'")
+            ],
+            breakpoints: Annotated[
+                str,
+                Field(description="断点配置，JSON数组格式如'[5,10,15]'，指定在哪些行设置断点")
+            ] = "[]"
+        ) -> Dict[str, Any]:
+            try:
+                breakpoints_list = json.loads(breakpoints)
+            except json.JSONDecodeError:
+                return error_response("invalid_json", f"breakpoints 格式错误: {breakpoints}")
+
+            result = context.ws_debug_service.execute_debug_session_tool(script_id, breakpoints_list)
+            return result if "success" in result else error_response(result["error"]["code"], result["error"]["message"])
+
+        @mcp_app.tool(
+            name="get_debug_status",
+            description="获取当前调试状态，包括断点信息和连接状态。",
+            tags={"debug", "status", "monitoring"},
+        )
+        def get_debug_status() -> Dict[str, Any]:
+            result = context.ws_debug_service.get_debug_status_tool()
+            return result if "success" in result else error_response(result["error"]["code"], result["error"]["message"])
+
+        @mcp_app.tool(
+            name="inspect_ws_environments",
+            description="列出当前MCP会话感知到的IDE环境、客户端与打开的文件上下文。",
+            tags={"debug", "status", "websocket"},
+        )
+        def inspect_ws_environments() -> Dict[str, Any]:
+            environments = [
+                _serialize_environment(env)
+                for env in context.ws_manager.state.list_environments()
+            ]
+            return {"success": True, "environments": environments}
+
+        @mcp_app.tool(
+            name="get_websocket_status",
+            description="检查WebSocket连接状态和配置信息。",
+            tags={"websocket", "status", "connection"},
+        )
+        def websocket_status() -> Dict[str, Any]:
+            return {
+                "success": True,
+                "status": "ready",
+                "ws_url": context.settings.ws_url,
+                "base_url": context.settings.base_url,
+                "auth_enabled": context.settings.auth_enabled,
+                "note": "WebSocket连接在需要时自动建立，可通过调试工具进行实时操作",
+            }
+
+    async def _async_debug_call(
+        self, 
+        context, 
+        session_id: str, 
+        path: str, 
+        method: str, 
+        data: Any, 
+        params: Any, 
+        breakpoints: Any, 
+        timeout: float,
+        ctx: "Context" = None
+    ) -> Dict[str, Any]:
+        """异步调用API并监听断点。"""
+        try:
+            # 调用API并设置断点
+            result = await context.ws_debug_service.call_api_with_debug_tool(
+                path=path,
+                method=method,
+                data=data,
+                params=params,
+                breakpoints=breakpoints,
+            )
+            
+            # 更新会话状态
+            session = self.debug_sessions[session_id]
+            session["api_call_result"] = result
+            
+            if "success" in result:
+                session["status"] = "api_called"
+                # 监听断点
+                monitor_result = await self._monitor_breakpoint_with_timeout(context, session_id, timeout)
+                
+                return {
+                    "success": True,
+                    "session_id": session_id,
+                    "message": "异步调试会话已启动",
+                    "api_result": result,
+                    "monitor_result": monitor_result,
+                    "timeout": timeout
+                }
+            else:
+                session["status"] = "api_failed"
+                session["error"] = result.get("error", {})
+                return error_response(
+                    result["error"]["code"], 
+                    result["error"]["message"], 
+                    {"session_id": session_id, "api_result": result}
+                )
+                
+        except Exception as e:
+            logger.error(f"异步调试调用失败: {e}")
+            session = self.debug_sessions[session_id]
+            session["status"] = "error"
+            session["error"] = str(e)
+            return error_response("async_debug_call_error", str(e), {"session_id": session_id})
+
+    async def _monitor_breakpoint_with_timeout(
+        self, 
+        context, 
+        session_id: str, 
+        timeout: float
+    ) -> Dict[str, Any]:
+        """在指定超时时间内监听断点。"""
+        start_time = time.time()
+        session = self.debug_sessions[session_id]
+        
+        try:
+            while time.time() - start_time < timeout:
+                # 检查断点状态
+                debug_service: WebSocketDebugService = context.ws_debug_service
+                status = debug_service.get_debug_status_tool()
+                
+                if status.get("success"):
+                    breakpoints = status.get("status", {}).get("breakpoints", [])
+                    
+                    if breakpoints:
+                        # 遇到断点
+                        session["current_breakpoint"] = breakpoints[0]
+                        session["status"] = "breakpoint_hit"
+                        session["breakpoints_hit"].append({
+                            "breakpoint": breakpoints[0],
+                            "timestamp": time.time()
+                        })
+                        
+                        return {
+                            "status": "breakpoint_hit",
+                            "breakpoint": breakpoints[0],
+                            "message": f"遇到断点在第 {breakpoints[0]} 行，可以选择恢复执行或单步调试",
+                            "available_actions": [
+                                "resume_from_breakpoint",
+                                "step_over_breakpoint", 
+                                "step_into_breakpoint",
+                                "step_out_breakpoint"
+                            ],
+                            "session_id": session_id,
+                            "elapsed_time": time.time() - start_time
+                        }
+                    
+                    # 检查API是否完成
+                    if self._is_api_completed(status):
+                        session["api_completed"] = True
+                        session["status"] = "completed"
+                        return {
+                            "status": "completed",
+                            "message": "断点调试结束，API返回完成",
+                            "session_id": session_id,
+                            "elapsed_time": time.time() - start_time
+                        }
+                
+                # 等待一段时间再检查
+                await asyncio.sleep(0.5)
+            
+            # 超时
+            session["status"] = "timeout"
+            return {
+                "status": "timeout",
+                "message": f"监听超时 ({timeout}秒)，请使用 get_latest_breakpoint_status 查询最新状态",
+                "session_id": session_id,
+                "timeout": timeout,
+                "expected_next_action": "get_latest_breakpoint_status"
+            }
+            
+        except Exception as e:
+            logger.error(f"监听断点时出错: {e}")
+            session["status"] = "monitor_error"
+            session["error"] = str(e)
+            return {
+                "status": "error",
+                "message": f"监听断点时出错: {str(e)}",
+                "session_id": session_id
+            }
+    
+    def _is_api_completed(self, status: Dict[str, Any]) -> bool:
+        """检查API是否已完成。"""
+        # 这里需要根据实际的状态结构来判断
+        # 可能需要检查是否没有正在执行的请求或者其他标志
+        return False  # 暂时返回false，需要根据实际情况调整
+
+
+# 从 debug.py 合并过来的辅助函数
+async def _emit_ws_notifications(ctx: "Context", logs: List[Dict[str, Any]]) -> None:
+    for entry in logs or []:
+        msg_type = (entry.get("type") or "log").upper()
+        text = entry.get("text") or entry.get("payload") or ""
+        extra = {k: v for k, v in entry.items() if k not in {"text", "payload"}}
+        try:
+            level = MessageType(msg_type)
+        except ValueError:
+            level = MessageType.LOG
+
+        if level == MessageType.BREAKPOINT:
+            await ctx.warning(text, extra=extra)
+        elif level == MessageType.EXCEPTION:
+            await ctx.error(text, extra=extra)
+        elif level in {MessageType.LOG, MessageType.LOGS}:
+            await ctx.debug(text, extra=extra)
+        else:
+            await ctx.info(text, extra=extra)
+
+
+def _serialize_environment(env: IDEEnvironment) -> Dict[str, Any]:
+    opened = {}
+    for client_id, ctx in env.opened_files.items():
+        opened[client_id] = _serialize_open_file_context(ctx)
+    return {
+        "ide_key": env.ide_key,
+        "primary_ip": env.primary_ip,
+        "client_ids": sorted(env.client_ids),
+        "latest_user": env.latest_user,
+        "opened_files": opened,
+        "last_active_at": env.last_active_at,
+    }
+
+
+def _serialize_open_file_context(ctx: OpenFileContext) -> Dict[str, Any]:
+    return {
+        "file_id": ctx.file_id,
+        "resolved_at": ctx.resolved_at,
+        "method": ctx.method,
+        "path": ctx.path,
+        "name": ctx.name,
+        "group_chain": ctx.group_chain,
+        "headers": ctx.headers,
+        "last_breakpoint_range": ctx.last_breakpoint_range,
+        "detail": ctx.detail,
+    }
