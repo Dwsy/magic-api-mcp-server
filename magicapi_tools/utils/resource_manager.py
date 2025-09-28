@@ -291,7 +291,40 @@ class MagicAPIResourceTools:
         )
 
         if result_file_id:
-            return {"success": True, "id": result_file_id, "name": name or "updated_api", "path": path or "updated_path", "operation": operation}
+            # result_file_id 现在是一个字典，包含 id 和 full_path
+            if isinstance(result_file_id, dict):
+                return {
+                    "success": True, 
+                    "id": result_file_id.get("id"), 
+                    "name": name or "updated_api", 
+                    "path": path or "updated_path", 
+                    "full_path": result_file_id.get("full_path"),
+                    "operation": operation
+                }
+            else:
+                # 向后兼容：如果返回的是字符串ID
+                # 在这种情况下，我们需要使用manager方法获取full_path
+                full_path = None
+                if not id:  # 只在创建时计算full_path
+                    try:
+                        # 获取资源树以构建fullPath
+                        resource_tree = self.manager.get_resource_tree()
+                        if resource_tree:
+                            # 从资源树中计算API的完整路径
+                            full_path = self.manager._compute_full_path(resource_tree, path, group_id)
+                    except Exception as e:
+                        print(f"⚠️ 计算fullPath时出错: {e}")
+                
+                result = {
+                    "success": True, 
+                    "id": result_file_id, 
+                    "name": name or "updated_api", 
+                    "path": path or "updated_path", 
+                    "operation": operation
+                }
+                if full_path:
+                    result["full_path"] = full_path
+                return result
 
         # 返回详细的错误信息
         return {
@@ -1224,7 +1257,7 @@ class MagicAPIResourceManager:
         response_body_definition: Optional[Dict[str, Any]] = None,
         options: Optional[List[Dict[str, Any]]] = None,
         auto_save: bool = False
-    ) -> Optional[str]:
+    ) -> Optional[Dict[str, Any]]:
         """
         保存API文件（支持创建和更新操作）
         基于 MagicResourceController.saveFile 实现
@@ -1248,7 +1281,7 @@ class MagicAPIResourceManager:
             auto_save: 是否自动保存
 
         Returns:
-            保存成功返回文件ID，失败返回None
+            保存成功返回包含文件ID和fullPath的字典，失败返回None
         """
         try:
             is_update = id is not None
@@ -1358,7 +1391,26 @@ class MagicAPIResourceManager:
                     file_id = result.get('data')
                     operation = "更新" if is_update else "创建"
                     print(f"✅ {operation}API文件成功: {full_api_data['name']} (ID: {file_id})")
-                    return file_id
+                    
+                    # 获取资源树以构建fullPath
+                    if not is_update:  # 只在创建时计算fullPath
+                        try:
+                            # 获取资源树
+                            resource_tree = self.get_resource_tree()
+                            if resource_tree:
+                                # 从资源树中计算API的完整路径
+                                full_path = self._compute_full_path(resource_tree, full_api_data["path"], group_id)
+                                return {"id": file_id, "full_path": full_path}
+                            else:
+                                # 如果无法获取资源树，返回当前路径作为fullPath
+                                return {"id": file_id, "full_path": full_api_data["path"]}
+                        except Exception as e:
+                            print(f"⚠️ 计算fullPath时出错: {e}")
+                            # 出错时返回当前路径作为fullPath
+                            return {"id": file_id, "full_path": full_api_data["path"]}
+                    else:
+                        # 更新操作
+                        return {"id": file_id, "full_path": full_api_data["path"]}
                 else:
                     operation = "更新" if is_update else "创建"
                     print(f"❌ {operation}API文件失败: {result.get('message', '未知错误')}")
@@ -1369,6 +1421,68 @@ class MagicAPIResourceManager:
             print(f"❌ {operation}API文件时出错: {e}")
 
         return None
+
+    def _compute_full_path(self, resource_tree: Dict[str, Any], current_path: str, group_id: str) -> str:
+        """
+        根据资源树计算API的完整路径(fullPath)
+        
+        Args:
+            resource_tree: 资源树结构
+            current_path: 当前API的路径
+            group_id: 分组ID
+            
+        Returns:
+            API的完整路径
+        """
+        def find_path_recursive(nodes: List[Dict], target_group_id: str, current_path_fragment: str = "") -> Optional[str]:
+            """
+            递归查找指定分组ID的路径
+            
+            Args:
+                nodes: 当前层级的节点列表
+                target_group_id: 目标分组ID
+                current_path_fragment: 当前已构建的路径片段
+                
+            Returns:
+                找到的路径或None
+            """
+            for node in nodes:
+                node_info = node.get('node', {})
+                node_id = node_info.get('id', '')
+                node_path = node_info.get('path', '')
+                
+                # 如果当前节点就是目标分组
+                if node_id == target_group_id:
+                    if current_path_fragment:
+                        return f"{current_path_fragment}/{node_path}".strip('/')
+                    else:
+                        return node_path.lstrip('/')
+                
+                # 递归搜索子节点
+                children = node.get('children', [])
+                if children:
+                    # 构建新的路径片段
+                    new_path_fragment = f"{current_path_fragment}/{node_path}".strip('/') if current_path_fragment else node_path
+                    result = find_path_recursive(children, target_group_id, new_path_fragment)
+                    if result is not None:
+                        return result
+            
+            return None
+        
+        # 从资源树的根开始查找
+        for folder_type, tree_node in resource_tree.items():
+            if tree_node and 'children' in tree_node:
+                # 根据分组ID查找路径
+                group_path = find_path_recursive(tree_node['children'], group_id)
+                if group_path is not None:
+                    # 将分组路径与当前API路径组合
+                    if group_path:
+                        return f"{group_path}/{current_path}".strip('/')
+                    else:
+                        return current_path.lstrip('/')
+        
+        # 如果找不到分组路径，返回当前路径
+        return current_path.lstrip('/')
 
     def save_api_file_with_error_details(
         self,
@@ -1788,7 +1902,7 @@ class MagicAPIResourceManager:
                 else:
                     print(f"[文件] {resource['name']}")
 
-    def create_api_file(self, group_id: str, name: str, method: str, path: str, script: str, auto_save: bool = False) -> Optional[str]:
+    def create_api_file(self, group_id: str, name: str, method: str, path: str, script: str, auto_save: bool = False) -> Optional[Dict[str, Any]]:
         """
         创建API文件（便捷方法）
 
@@ -1801,16 +1915,16 @@ class MagicAPIResourceManager:
             auto_save: 是否自动保存
 
         Returns:
-            创建成功返回文件ID，失败返回None
+            创建成功返回包含文件ID和fullPath的字典，失败返回None
         """
-        api_data = {
-            "name": name,
-            "method": method.upper(),
-            "path": path,
-            "script": script
-        }
-
-        return self.save_api_file(group_id, api_data, auto_save)
+        return self.save_api_file(
+            group_id=group_id,
+            name=name,
+            method=method,
+            path=path,
+            script=script,
+            auto_save=auto_save
+        )
 
     def list_groups(self) -> List[Dict]:
         """

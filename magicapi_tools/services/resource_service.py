@@ -243,16 +243,40 @@ class ResourceService(BaseService):
                     message=f"API详情数据异常: {e}"
                 )
 
-        # 调用创建API的逻辑
-        # 这里应该调用实际的API创建逻辑
-        operation = "更新" if request.id else "创建"
-        return ResourceOperationResponse(
-            success=True,
-            operation=f"{operation}API",
-            resource_id=request.id or "new_id",
-            message=f"API{operation}成功",
-            affected_count=1
-        )
+        # 调用资源管理器的实际保存方法
+        try:
+            # 使用resource_manager中的工具来保存API
+            result = self.resource_tools.create_api_tool(**save_kwargs)
+            
+            if "success" in result:
+                operation = "更新" if request.id else "创建"
+                # 如果result包含full_path，将其包含在响应中
+                additional_info = {}
+                if "full_path" in result:
+                    additional_info["full_path"] = result["full_path"]
+                
+                return ResourceOperationResponse(
+                    success=True,
+                    operation=f"{operation}API",
+                    resource_id=result["id"],
+                    message=f"API{operation}成功",
+                    affected_count=1,
+                    details=additional_info
+                )
+            else:
+                error_info = result.get("error", {})
+                return ResourceOperationResponse(
+                    success=False,
+                    operation="create_api",
+                    message=error_info.get("message", f"API{operation}失败"),
+                    details=error_info
+                )
+        except Exception as e:
+            return ResourceOperationResponse(
+                success=False,
+                operation="create_api",
+                message=f"API{operation}过程中发生错误: {str(e)}"
+            )
 
     def copy_resource(self, src_id: str, target_id: str) -> ResourceOperationResponse:
         """复制资源。"""
