@@ -24,6 +24,7 @@ from .kb_config import CONFIG_KNOWLEDGE, get_config_docs
 from .kb_plugins import PLUGINS_KNOWLEDGE, get_plugin_docs
 from .kb_practices import PRACTICES_KNOWLEDGE, get_best_practices, get_pitfalls, get_workflow
 from .kb_examples import EXAMPLES_KNOWLEDGE, get_examples
+from .kb_web_docs import search_web_docs_by_keyword, get_web_docs_knowledge
 
 # 向后兼容的接口
 MAGIC_SCRIPT_SYNTAX = SYNTAX_KNOWLEDGE
@@ -38,7 +39,7 @@ def get_knowledge(category: str, topic: str = None) -> Any:
     """统一的知识库查询接口。
 
     Args:
-        category: 知识分类 (syntax, modules, functions, extensions, config, plugins, practices, examples)
+        category: 知识分类 (syntax, modules, functions, extensions, config, plugins, practices, examples, web_docs)
         topic: 具体主题，可选
 
     Returns:
@@ -56,7 +57,10 @@ def get_knowledge(category: str, topic: str = None) -> Any:
             "pitfalls": get_pitfalls(),
             "workflow": get_workflow(t) if t else None
         }.get(t) if t else get_best_practices(),
-        "examples": get_examples
+        "examples": get_examples,
+        "web_docs": lambda t: {
+            "documents": [doc for doc in get_web_docs_knowledge() if t is None or t.lower() in doc.get("title", "").lower() or t.lower() in doc.get("content", "").lower()]
+        }
     }
 
     if category not in category_map:
@@ -67,7 +71,7 @@ def get_knowledge(category: str, topic: str = None) -> Any:
 # 获取所有可用知识分类
 def get_available_categories() -> List[str]:
     """获取所有可用的知识分类。"""
-    return ["syntax", "modules", "functions", "extensions", "config", "plugins", "practices", "examples"]
+    return ["syntax", "modules", "functions", "extensions", "config", "plugins", "practices", "examples", "web_docs"]
 
 # 获取分类下的可用主题
 def get_category_topics(category: str) -> List[str]:
@@ -80,7 +84,8 @@ def get_category_topics(category: str) -> List[str]:
         "config": list(CONFIG_KNOWLEDGE.keys()),
         "plugins": list(PLUGINS_KNOWLEDGE.keys()),
         "practices": ["best_practices", "pitfalls", "workflows"],
-        "examples": list(EXAMPLES_KNOWLEDGE.keys())
+        "examples": list(EXAMPLES_KNOWLEDGE.keys()),
+        "web_docs": [doc.get("title", "Untitled") for doc in get_web_docs_knowledge()[:50]]  # 限制显示前50个文档标题
     }
     return knowledge_map.get(category, [])
 
@@ -311,8 +316,7 @@ Magic-Script 是一种小众语言，具有独特的语法规则，不遵循标�
 - **get_script_syntax**: 获取 Magic-API 脚本语法说明
 - **get_development_workflow** ⚠️ [强制]: 获取 Magic-API 开发标准化工作流指南（API脚本开发前必须调用）
 - **search_knowledge** 🔍 [推荐]: 在知识库中进行全文搜索（不确定时优先使用）
-- **get_module_api**: 获取内置模块 API 文档 (db, http, request, response, log, env, cache, magic)
-- **get_function_docs**: 获取内置函数库文档
+- **get_documentation**: 获取各类文档，包括模块API、函数库、扩展功能、配置选项和插件系统文档
 - **get_best_practices**: 获取最佳实践指南
 - **get_pitfalls**: 获取常见问题和陷阱
 - **get_examples**: 获取具体代码示例和分类概览
@@ -354,7 +358,7 @@ Magic-Script 是一种小众语言，具有独特的语法规则，不遵循标�
 🔍 **当你不确定某个功能或语法时，优先使用搜索工具：**
 - 调用 `search_knowledge` 进行全文搜索，关键词可以是功能名称、语法关键词等
 - 例如：搜索"数据库连接"、"缓存使用"、"文件上传"等
-- 可以限定搜索分类：syntax(语法)、modules(模块)、functions(函数)等
+- 可以限定搜索分类：syntax(语法)、modules(模块)、functions(函数)、web_docs(文档)等
 
 ##### 最佳实践
 - 🔍 **遇到不确定的问题时，先搜索知识库**
@@ -409,4 +413,7 @@ __all__ = [
     "get_custom_result_examples",
     "get_redis_plugin_examples",
     "get_advanced_operations_examples",
+    # web-docs 相关函数
+    "get_web_docs_knowledge",
+    "search_web_docs_by_keyword",
 ]
