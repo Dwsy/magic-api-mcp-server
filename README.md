@@ -659,3 +659,147 @@ magicapi_tools/
     └── resource_manager.py  # 资源管理器
 ```
 
+
+
+
+## AIMCP Electron 客户端附录（含 Mermaid 架构图）
+
+> 本附录面向基于 Electron 的 AIMCP 客户端，指导如何对接本 Magic-API MCP Server，并提供关键流程可视化。适合作为独立开源仓库 README 模板片段复用。
+
+### 项目简介（AIMCP）
+- 目标：在 Electron 应用中，通过 MCP 协议统一调用 Magic-API 能力，覆盖查询、资源管理与调试。
+- 栈特性：Electron(Main/Renderer/Preload) + Node MCP 客户端 + FastMCP Server(Python) + Magic-API(HTTP/WS)。
+
+### 架构总览
+```mermaid
+flowchart LR
+  subgraph Renderer[Electron Renderer UI]
+    R[React/Vue/Svelte UI]
+  end
+  subgraph Main[Electron Main Process]
+    IPC[IPC Router]
+    C[Node MCP Client]
+  end
+  subgraph Server[magic-api-mcp-server (Python/FastMCP)]
+    S[Tools: Api/Query/Debug/...]
+  end
+  subgraph MagicAPI[Magic-API Backend]
+    A[(HTTP API)]
+    W[(WS Console)]
+    DB[(Database)]
+  end
+
+  R -->|ipcRenderer.invoke| IPC --> C
+  C <--> |stdio/http| S
+  S --> A --> DB
+  S -. WebSocket Debug .-> W
+```
+
+### 关键调用时序
+```mermaid
+sequenceDiagram
+  participant U as User
+  participant R as Renderer
+  participant M as Main
+  participant C as MCP Client
+  participant S as MCP Server
+  participant A as Magic-API
+  participant W as WS Console
+
+  U->>R: 点击“调用接口”
+  R->>M: ipcRenderer.invoke('call-magic-api', payload)
+  M->>C: call_tool(name=call_magic_api, args)
+  C->>S: MCP Tool Invocation
+  S->>A: HTTP 请求(method/path/params)
+  A-->>S: JSON 响应
+  S-->>C: ToolResponse(success/data)
+  C-->>M: 结果
+  M-->>R: IPC 返回并渲染
+  R-->>U: 展示数据
+  opt 调试模式
+    M->>C: set_breakpoint + call_api_with_debug
+    C->>S: 调试会话
+    S-->>W: 断点事件(WS)
+  end
+```
+
+### 快速集成（Electron Main）
+```ts
+// main/mcp.ts
+import { spawn } from 'node:child_process'
+import { StdioClientTransport, Client } from '@modelcontextprotocol/sdk/client'
+
+export async function createMcpClient() {
+  const child = spawn('uvx', ['magic-api-mcp-server@latest', '--transport', 'stdio'], {
+    stdio: ['pipe', 'pipe', 'pipe']
+  })
+
+  const transport = new StdioClientTransport({
+    stdin: child.stdin!, stdout: child.stdout!, stderr: child.stderr!
+  })
+
+  const client = new Client({ name: 'AIMCP', version: '0.1.0' }, transport)
+  await client.connect()
+  return { client, child }
+}
+
+// 调用示例
+export async function callMagicApi(client: Client, args: any) {
+  return client.callTool({ name: 'call_magic_api', arguments: args })
+}
+```
+
+```ts
+// main/ipc.ts
+import { ipcMain } from 'electron'
+import { createMcpClient, callMagicApi } from './mcp'
+
+let mcp: Awaited<ReturnType<typeof createMcpClient>> | null = null
+
+ipcMain.handle('call-magic-api', async (_e, payload) => {
+  if (!mcp) mcp = await createMcpClient()
+  const res = await callMagicApi(mcp.client, payload)
+  return res
+})
+```
+
+### 渲染进程调用示例
+```ts
+// renderer/api.ts
+export async function callApi(payload: {
+  method: 'GET'|'POST'|'PUT'|'DELETE', path: string, params?: any, headers?: any
+}) {
+  return window.electron.ipc.invoke('call-magic-api', payload)
+}
+```
+
+### 配置与安全建议
+- 在 Electron 主进程通过环境变量注入 MAGIC_API_BASE_URL/MAGIC_API_WS_URL 等，勿在 Renderer 暴露密钥。
+- 生产环境启用 MAGIC_API_AUTH_ENABLED 并使用 TOKEN 访问。
+- 调试开关建议以 Feature Flag 控制（仅开发环境允许 set_breakpoint）。
+
+### 常用功能映射
+- API 调用：call_magic_api（支持自定义 success 判断，详见前文环境变量）。
+- 资源检索：search_api_endpoints、get_api_details_by_path。
+- 调试会话：set_breakpoint、call_api_with_debug、resume_breakpoint_execution。
+
+### 目录建议（AIMCP 客户端）
+```
+app/
+├─ main/            # Electron Main（进程生命周期、MCP 客户端、IPC）
+│  ├─ mcp.ts
+│  └─ ipc.ts
+├─ preload/         # 受限桥接，仅暴露安全 IPC 能力
+├─ renderer/        # 前端 UI（调用 ipcRenderer.invoke）
+└─ config/          # env/配置与 Feature Flags
+```
+
+### 开发与打包提示
+- 开发：同时运行 Electron 与 MCP Server（Main 进程首调用时自动拉起 uvx 进程）。
+- 打包：确保将 uv/uvx 作为外部依赖或在安装阶段预置；或改为 HTTP 模式连接已部署的 MCP Server。
+
+### 故障排查速查
+- 无响应：检查 Main 进程是否成功 spawn uvx；查看 child.stderr。
+- 401/403：确认 MAGIC_API_AUTH_ENABLED 与 TOKEN 配置。
+- 断点不生效：检查 Magic-API WS 地址与权限；确认调试工具组合启用。
+
