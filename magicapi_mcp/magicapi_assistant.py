@@ -36,10 +36,13 @@ from __future__ import annotations
 
 import argparse
 import sys
+import signal
+import atexit
 from typing import Any, List, Optional
 
 from magicapi_mcp.settings import MagicAPISettings
 from magicapi_mcp.tool_composer import create_app as _create_app
+from magicapi_mcp.tool_registry import tool_registry
 
 try:
     from fastmcp import FastMCP
@@ -66,10 +69,54 @@ def create_app(
     """
     return _create_app(composition, settings, custom_modules)
 
+def _cleanup_resources():
+    """清理资源，特别是 WebSocket 管理器"""
+    # 获取工具注册器中的上下文
+    if tool_registry.context:
+        # 获取并关闭 WebSocket 管理器
+        try:
+            ws_manager = tool_registry.context.ws_manager
+            if ws_manager and hasattr(ws_manager, 'stop_sync'):
+                ws_manager.stop_sync()
+                print("WebSocket 管理器已关闭")
+        except Exception as e:
+            print(f"关闭 WebSocket 管理器时出错: {e}")
+        
+        # 清理资源管理器
+        try:
+            resource_manager = tool_registry.context.resource_manager
+            if resource_manager and hasattr(resource_manager, 'close'):
+                resource_manager.close()
+        except Exception as e:
+            print(f"关闭资源管理器时出错: {e}")
+
+def signal_handler(sig, frame):
+    """处理 Ctrl+C 信号，确保优雅关闭"""
+    print('\\n正在关闭服务器...')
+    _cleanup_resources()
+    print("服务器已关闭")
+    sys.exit(0)
+
+def setup_signal_handlers():
+    """设置信号处理器以确保优雅关闭"""
+    signal.signal(signal.SIGINT, signal_handler)   # Ctrl+C
+    signal.signal(signal.SIGTERM, signal_handler)  # Termination
+
+# 注册退出时的清理函数
+def cleanup_on_exit():
+    """程序退出时的清理函数"""
+    _cleanup_resources()
+
 def main() -> None:
     """命令行入口点函数，用于pip安装后的命令行调用。"""
     if FastMCP is None:
         raise SystemExit("未检测到 fastmcp，请先运行 `uv add fastmcp` 安装依赖。")
+
+    # 设置信号处理器
+    setup_signal_handlers()
+    
+    # 注册退出时的清理函数
+    atexit.register(cleanup_on_exit)
 
     parser = argparse.ArgumentParser(
         description="Magic-API MCP Server",
@@ -113,10 +160,17 @@ def main() -> None:
 
     app = create_app(args.composition)
 
-    if args.transport == "http":
-        app.run(transport="http", host=args.host, port=args.port)
-    else:
-        app.run(transport="stdio")
+    try:
+        if args.transport == "http":
+            app.run(transport="http", host=args.host, port=args.port)
+        else:
+            app.run(transport="stdio")
+    except KeyboardInterrupt:
+        signal_handler(None, None)
+    except Exception as e:
+        print(f"服务器运行出错: {e}")
+        _cleanup_resources()
+        sys.exit(1)
 
 
 # 创建全局mcp对象供fastmcp导入
